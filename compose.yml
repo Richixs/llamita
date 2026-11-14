@@ -2,7 +2,9 @@ name: llamita
 
 services:
   # Main service (Production / K8s simulation)
+  # Runs only when using: docker compose --profile prod up
   web:
+    profiles: ["prod"]
     build:
       context: .
       dockerfile: Dockerfile
