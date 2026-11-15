@@ -13,6 +13,10 @@ import {
   type GamcLayerId,
 } from "@/lib/geo/catalog";
 import { dateOffset, number, periodLabel } from "@/lib/llamita/filters";
+import {
+  COCHABAMBA_MUNICIPALITIES,
+  COCHABAMBA_PROVINCES,
+} from "@/lib/geo/names";
 import type { Detection } from "@/lib/llamita/data";
 import type { FeatureInfo, MapApi } from "./geographic-map";
 import "./map.css";
@@ -204,19 +208,41 @@ export function LiveMapView({ initialFocus = "" }: { initialFocus?: string }) {
             Se incluyen todos los puntos dentro del rectángulo, sin recorte por
             límites administrativos.
           </p>
-          <fieldset className="unavailable-filters" disabled>
+          <fieldset className="unavailable-filters">
             <legend className="overline">Filtros territoriales</legend>
             <label className="field">
               Provincia
-              <input placeholder="Requiere límites vectoriales" />
+              <select
+                aria-label="Filtrar por provincia"
+                value={filters.province}
+                onChange={(e) => updateFilters({ province: e.target.value })}
+              >
+                <option value="">Todas</option>
+                {COCHABAMBA_PROVINCES.map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+              </select>
             </label>
             <label className="field">
               Municipio
-              <input placeholder="Requiere límites vectoriales" />
+              <select
+                aria-label="Filtrar por municipio"
+                value={filters.municipality}
+                onChange={(e) => updateFilters({ municipality: e.target.value })}
+              >
+                <option value="">Todos</option>
+                {COCHABAMBA_MUNICIPALITIES.map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+              </select>
             </label>
             <label className="field">
               TCO / áreas protegidas
-              <input placeholder="Fuente pendiente" />
+              <input placeholder="Fuente pendiente" disabled />
             </label>
           </fieldset>
         </section>
