@@ -1,7 +1,12 @@
 "use client";
 import { useId, useRef, useState, type PointerEvent } from "react";
 import artwork from "@/lib/map/artwork.json";
-import { heatColor, municipalities, type Detection } from "@/lib/llamita/data";
+import { municipalities, type Detection } from "@/lib/llamita/data";
+import {
+  byIntensity,
+  HOTSPOT_OUTLINE_WIDTH,
+  hotspotStyle,
+} from "@/lib/llamita/hotspot-style";
 export interface Layers {
   hotspots: boolean;
   boundaries: boolean;
@@ -57,6 +62,11 @@ export function MapArtwork({
     setPan({ x: drag.current.px + dx, y: drag.current.py + dy });
   }
   const focused = data.find((d) => d.id === focusedId);
+  // Markers live inside the zoomed group: dividing by sqrt(zoom) lets them
+  // grow gently when zooming in instead of ballooning with the map.
+  const strokeScale = 1 / Math.sqrt(zoom);
+  const markerScale = (data.length > 400 ? 0.45 : 0.6) * strokeScale;
+  const hotspots = byIntensity(data);
   const center = focused ? { x: focused.x, y: focused.y } : { x: 910, y: 482 };
   return (
     <svg
@@ -194,30 +204,50 @@ export function MapArtwork({
             />
           ))}
         </g>
+        {layers.hotspots && (
+          <g aria-hidden="true">
+            {hotspots.map((d) => {
+              const style = hotspotStyle(d.frp);
+              return (
+                <circle
+                  key={d.id}
+                  cx={d.x}
+                  cy={d.y}
+                  r={style.haloRadius * markerScale}
+                  fill={style.fill}
+                  fillOpacity={0.3}
+                />
+              );
+            })}
+          </g>
+        )}
         {layers.hotspots &&
-          data.map((d) => (
-            <circle
-              key={d.id}
-              data-marker
-              cx={d.x}
-              cy={d.y}
-              r={data.length > 400 ? 2.5 : 3.5}
-              fill={heatColor(d.frp)}
-              stroke="white"
-              strokeWidth={0.9}
-              onClick={interactive ? () => onSelect?.(d) : undefined}
-            >
-              <title>{`${d.municipality} · ${d.frp} MW · ${d.date}`}</title>
-            </circle>
-          ))}
+          hotspots.map((d) => {
+            const style = hotspotStyle(d.frp);
+            return (
+              <circle
+                key={d.id}
+                data-marker
+                cx={d.x}
+                cy={d.y}
+                r={style.radius * markerScale}
+                fill={style.fill}
+                stroke={style.outline}
+                strokeWidth={HOTSPOT_OUTLINE_WIDTH * strokeScale}
+                onClick={interactive ? () => onSelect?.(d) : undefined}
+              >
+                <title>{`${d.municipality} · ${d.frp} MW · ${d.date}`}</title>
+              </circle>
+            );
+          })}
         {focused && (
           <circle
             cx={focused.x}
             cy={focused.y}
-            r="9"
+            r={(hotspotStyle(focused.frp).radius + 4) * markerScale}
             fill="none"
-            stroke="var(--color-carbon)"
-            strokeWidth="2"
+            stroke={satellite ? "white" : "var(--color-carbon)"}
+            strokeWidth={2.5 * strokeScale}
           />
         )}
       </g>

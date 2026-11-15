@@ -3,7 +3,13 @@ import { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { GAMC_LAYERS, type Bbox, type GamcLayerId } from "@/lib/geo/catalog";
-import { heatColor, type Detection } from "@/lib/llamita/data";
+import type { Detection } from "@/lib/llamita/data";
+import {
+  byIntensity,
+  FOCUS_OUTLINE,
+  HOTSPOT_OUTLINE_WIDTH,
+  hotspotStyle,
+} from "@/lib/llamita/hotspot-style";
 export interface MapApi {
   getBbox: () => Bbox;
   fit: (bbox: Bbox) => void;
@@ -210,14 +216,31 @@ export default function GeographicMap({
     const map = mapRef.current;
     if (!map) return;
     const group = L.layerGroup().addTo(map);
-    if (showHotspots)
-      for (const d of data) {
+    // Most intense on top; the focused hotspot is drawn last of all.
+    const ordered = byIntensity(data).sort(
+      (a, b) => Number(a.id === focusId) - Number(b.id === focusId),
+    );
+    if (showHotspots) {
+      // Halos first so they never cover neighbouring dots.
+      for (const d of ordered) {
+        const style = hotspotStyle(d.frp);
+        L.circleMarker([d.latitude, d.longitude], {
+          radius: style.haloRadius,
+          fillColor: style.fill,
+          fillOpacity: 0.3,
+          stroke: false,
+          interactive: false,
+        }).addTo(group);
+      }
+      for (const d of ordered) {
+        const style = hotspotStyle(d.frp);
+        const focused = d.id === focusId;
         const marker = L.circleMarker([d.latitude, d.longitude], {
-          radius: d.id === focusId ? 8 : 5,
-          fillColor: heatColor(d.frp),
+          radius: focused ? style.radius + 3 : style.radius,
+          fillColor: style.fill,
           fillOpacity: 1,
-          color: d.id === focusId ? "#241A16" : "white",
-          weight: 1,
+          color: focused && !satellite ? FOCUS_OUTLINE : style.outline,
+          weight: focused ? 3 : HOTSPOT_OUTLINE_WIDTH,
           bubblingMouseEvents: false,
         });
         const label = document.createElement("span");
@@ -226,16 +249,20 @@ export default function GeographicMap({
         marker.on("click", () => callbacks.current.onPoint(d));
         marker.addTo(group);
       }
+    }
+    return () => {
+      map.removeLayer(group);
+    };
+  }, [data, showHotspots, focusId, satellite]);
+  useEffect(() => {
+    const map = mapRef.current;
     const focus = data.find((d) => d.id === focusId);
-    if (focus)
+    if (map && focus)
       map.setView(
         [focus.latitude, focus.longitude],
         Math.max(map.getZoom(), 12),
       );
-    return () => {
-      map.removeLayer(group);
-    };
-  }, [data, showHotspots, focusId]);
+  }, [data, focusId]);
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !selectedBoundary) return;
