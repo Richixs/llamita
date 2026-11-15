@@ -168,7 +168,12 @@ async function fetchHotspots(query: HotspotQuery): Promise<HotspotResult> {
   for (const family of families) {
     const legs = planFamily(family, query.from, utcEnd, availability, warnings);
     for (const leg of legs) {
-      tasks.push(...dateChunks(leg.from, leg.to).map((c) => ({ ...c, source: leg.source })));
+      tasks.push(
+        ...dateChunks(leg.from, leg.to).map((c) => ({
+          ...c,
+          source: leg.source,
+        })),
+      );
     }
   }
   const unique = new Map<string, Detection>();

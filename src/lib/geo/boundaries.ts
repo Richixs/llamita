@@ -17,9 +17,15 @@ const municipios = municipiosData as NamedBoundaries;
 
 export const UNASSIGNED = "Sin asignar";
 
-function findName(collection: NamedBoundaries, lat: number, lon: number): string {
+function findName(
+  collection: NamedBoundaries,
+  lat: number,
+  lon: number,
+): string {
   const target = point([lon, lat]);
-  const match = collection.features.find((feature) => booleanPointInPolygon(target, feature));
+  const match = collection.features.find((feature) =>
+    booleanPointInPolygon(target, feature),
+  );
   return match?.properties.name ?? UNASSIGNED;
 }
 
@@ -46,7 +52,10 @@ export type NamedBoundaryFeature = GeoJSON.Feature<
   { name: string }
 >;
 
-export function getBoundary(type: BoundaryType, name: string): NamedBoundaryFeature | undefined {
+export function getBoundary(
+  type: BoundaryType,
+  name: string,
+): NamedBoundaryFeature | undefined {
   const collection = type === "province" ? provincias : municipios;
   return collection.features.find((f) => f.properties.name === name);
 }

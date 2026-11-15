@@ -21,7 +21,10 @@ export async function GET(request: NextRequest) {
 
   const feature = getBoundary(type as BoundaryType, name);
   if (!feature)
-    return NextResponse.json({ error: "Límite no encontrado." }, { status: 404 });
+    return NextResponse.json(
+      { error: "Límite no encontrado." },
+      { status: 404 },
+    );
 
   return NextResponse.json(feature, {
     headers: { "Cache-Control": "public, max-age=3600" },

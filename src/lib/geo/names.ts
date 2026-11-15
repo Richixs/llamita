@@ -16,7 +16,7 @@ export const COCHABAMBA_PROVINCES = [
   "Punata",
   "Quillacollo",
   "Tapacarí",
-  "Tiraque"
+  "Tiraque",
 ] as const;
 
 export const COCHABAMBA_MUNICIPALITIES = [
@@ -66,87 +66,37 @@ export const COCHABAMBA_MUNICIPALITIES = [
   "Villa Gualberto Villarroel",
   "Villa Rivero",
   "Villa Tunari",
-  "Vinto"
+  "Vinto",
 ] as const;
 
 export const MUNICIPALITIES_BY_PROVINCE: Record<string, readonly string[]> = {
-  "Arani": [
-    "Arani",
-    "Vacas"
-  ],
-  "Arque": [
-    "Arque",
-    "Tacopaya"
-  ],
-  "Ayopaya": [
-    "Ayopaya",
-    "Cocapata",
-    "Morochata"
-  ],
-  "Bolivar": [
-    "Bolivar"
-  ],
-  "Campero": [
-    "Aiquile",
-    "Omereque",
-    "Pasorapa"
-  ],
-  "Capinota": [
-    "Capinota",
-    "Santivañez",
-    "Sicaya"
-  ],
-  "Carrasco": [
+  Arani: ["Arani", "Vacas"],
+  Arque: ["Arque", "Tacopaya"],
+  Ayopaya: ["Ayopaya", "Cocapata", "Morochata"],
+  Bolivar: ["Bolivar"],
+  Campero: ["Aiquile", "Omereque", "Pasorapa"],
+  Capinota: ["Capinota", "Santivañez", "Sicaya"],
+  Carrasco: [
     "Chimoré",
     "Entre Ríos",
     "Pocona",
     "Pojo",
     "Puerto Villarroel",
-    "Totora"
+    "Totora",
   ],
-  "Cercado": [
-    "Cochabamba"
-  ],
-  "Chapare": [
-    "Colomi",
-    "Sacaba",
-    "Villa Tunari"
-  ],
-  "Esteban Arze": [
-    "Anzaldo",
-    "Sacabamba",
-    "Tarata"
-  ],
-  "Germán Jordán": [
-    "Arbieto",
-    "Cliza",
-    "Toco",
-    "Tolata"
-  ],
-  "Mizque": [
-    "Alalay",
-    "Mizque",
-    "Vila Vila"
-  ],
-  "Punata": [
+  Cercado: ["Cochabamba"],
+  Chapare: ["Colomi", "Sacaba", "Villa Tunari"],
+  "Esteban Arze": ["Anzaldo", "Sacabamba", "Tarata"],
+  "Germán Jordán": ["Arbieto", "Cliza", "Toco", "Tolata"],
+  Mizque: ["Alalay", "Mizque", "Vila Vila"],
+  Punata: [
     "Punata",
     "San Benito",
     "Tacachi",
     "Villa Gualberto Villarroel",
-    "Villa Rivero"
+    "Villa Rivero",
   ],
-  "Quillacollo": [
-    "Colcapirhua",
-    "Quillacollo",
-    "Tiquipaya",
-    "Vinto"
-  ],
-  "Tapacarí": [
-    "Sipesipe",
-    "Tapacarí"
-  ],
-  "Tiraque": [
-    "Shinahota",
-    "Tiraque"
-  ]
+  Quillacollo: ["Colcapirhua", "Quillacollo", "Tiquipaya", "Vinto"],
+  Tapacarí: ["Sipesipe", "Tapacarí"],
+  Tiraque: ["Shinahota", "Tiraque"],
 } as const;

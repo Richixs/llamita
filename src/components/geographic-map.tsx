@@ -38,7 +38,9 @@ export default function GeographicMap({
   onFeatures: (value: FeatureInfo[] | null) => void;
   onLayerError: (layer: string) => void;
   apiRef: React.RefObject<MapApi | null>;
-  selectedBoundary?: GeoJSON.Feature<GeoJSON.Polygon | GeoJSON.MultiPolygon> | null;
+  selectedBoundary?: GeoJSON.Feature<
+    GeoJSON.Polygon | GeoJSON.MultiPolygon
+  > | null;
 }) {
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);

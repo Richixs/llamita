@@ -54,12 +54,17 @@ export function LiveMapView({ initialFocus = "" }: { initialFocus?: string }) {
   const [dismissedFocus, setDismissedFocus] = useState(false);
   const [features, setFeatures] = useState<FeatureInfo[] | null>(null);
   const [layerErrors, setLayerErrors] = useState<string[]>([]);
-  const [selectedBoundary, setSelectedBoundary] =
-    useState<GeoJSON.Feature<GeoJSON.Polygon | GeoJSON.MultiPolygon> | null>(null);
+  const [selectedBoundary, setSelectedBoundary] = useState<GeoJSON.Feature<
+    GeoJSON.Polygon | GeoJSON.MultiPolygon
+  > | null>(null);
   const apiRef = useRef<MapApi | null>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    const type = filters.municipality ? "municipality" : filters.province ? "province" : null;
+    const type = filters.municipality
+      ? "municipality"
+      : filters.province
+        ? "province"
+        : null;
     const name = filters.municipality || filters.province;
     const controller = new AbortController();
     (async () => {
@@ -197,13 +202,13 @@ export function LiveMapView({ initialFocus = "" }: { initialFocus?: string }) {
             ))}
           </div>
           <p className="text-caption muted">
-            Hasta {MAX_QUERY_DAYS} días por consulta. La disponibilidad
-            depende del producto de NASA.
+            Hasta {MAX_QUERY_DAYS} días por consulta. La disponibilidad depende
+            del producto de NASA.
           </p>
           {mode === "live" && rangeDays > 60 && (
             <p className="text-caption muted" role="status">
-              Rango amplio ({number(rangeDays)} días): la consulta puede
-              tardar varios segundos.
+              Rango amplio ({number(rangeDays)} días): la consulta puede tardar
+              varios segundos.
             </p>
           )}
         </section>
@@ -282,7 +287,9 @@ export function LiveMapView({ initialFocus = "" }: { initialFocus?: string }) {
               <select
                 aria-label="Filtrar por municipio"
                 value={filters.municipality}
-                onChange={(e) => updateFilters({ municipality: e.target.value })}
+                onChange={(e) =>
+                  updateFilters({ municipality: e.target.value })
+                }
               >
                 <option value="">Todos</option>
                 {(filters.province

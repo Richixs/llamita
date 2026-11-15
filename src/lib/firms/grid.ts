@@ -9,7 +9,8 @@ const METERS_PER_DEGREE_LAT = 111320;
 const GRID_SIZE_METERS = 1000;
 const LAT_STEP = GRID_SIZE_METERS / METERS_PER_DEGREE_LAT;
 const LON_STEP =
-  GRID_SIZE_METERS / (METERS_PER_DEGREE_LAT * Math.cos((CENTER_LAT_DEG * Math.PI) / 180));
+  GRID_SIZE_METERS /
+  (METERS_PER_DEGREE_LAT * Math.cos((CENTER_LAT_DEG * Math.PI) / 180));
 
 export function gridCell(lat: number, lon: number): string {
   return `${Math.floor(lat / LAT_STEP)}:${Math.floor(lon / LON_STEP)}`;
@@ -43,7 +44,9 @@ export function harmonizeToGrid(detections: Detection[]): Detection[] {
       return b.frp - a.frp;
     })[0];
     const detectedBy = [
-      ...new Set(group.map((d) => d.source).filter((s): s is string => Boolean(s))),
+      ...new Set(
+        group.map((d) => d.source).filter((s): s is string => Boolean(s)),
+      ),
     ];
     result.push({
       ...representative,

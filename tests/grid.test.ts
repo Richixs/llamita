@@ -9,7 +9,10 @@ import type { Detection } from "../src/lib/llamita/data";
 const BASE_LAT = -17.40321;
 const BASE_LON = -66.15234;
 
-function det(overrides: Partial<Detection> & Pick<Detection, "id" | "latitude" | "longitude">): Detection {
+function det(
+  overrides: Partial<Detection> &
+    Pick<Detection, "id" | "latitude" | "longitude">,
+): Detection {
   return {
     origin: "live",
     source: "VIIRS_NOAA20_NRT",
@@ -52,21 +55,30 @@ test("a VIIRS and a MODIS pixel over the same fire merge into one record", () =>
   // The group's strongest reading is kept, not a sum of both.
   assert.equal(result[0].frp, 21.03);
   assert.equal(result[0].observationCount, 2);
-  assert.deepEqual(
-    [...result[0].detectedBy!].sort(),
-    ["MODIS_NRT", "VIIRS_NOAA20_NRT"],
-  );
+  assert.deepEqual([...result[0].detectedBy!].sort(), [
+    "MODIS_NRT",
+    "VIIRS_NOAA20_NRT",
+  ]);
 });
 
 test("pixels more than ~1km apart stay as separate fires", () => {
   const a = det({ id: "a", latitude: BASE_LAT, longitude: BASE_LON });
-  const b = det({ id: "b", latitude: BASE_LAT - 0.02, longitude: BASE_LON - 0.02 }); // ~2.7km away
+  const b = det({
+    id: "b",
+    latitude: BASE_LAT - 0.02,
+    longitude: BASE_LON - 0.02,
+  }); // ~2.7km away
   const result = harmonizeToGrid([a, b]);
   assert.equal(result.length, 2);
 });
 
 test("the same grid cell on different days is not merged", () => {
-  const a = det({ id: "a", latitude: BASE_LAT, longitude: BASE_LON, date: "2026-11-14" });
+  const a = det({
+    id: "a",
+    latitude: BASE_LAT,
+    longitude: BASE_LON,
+    date: "2026-11-14",
+  });
   const b = det({
     id: "b",
     latitude: BASE_LAT + 0.0002,
@@ -80,8 +92,18 @@ test("the same grid cell on different days is not merged", () => {
 test("adjacent VIIRS sub-pixels within one grid cell collapse too", () => {
   const points = [
     det({ id: "v1", latitude: BASE_LAT, longitude: BASE_LON, frp: 3 }),
-    det({ id: "v2", latitude: BASE_LAT + 0.0003, longitude: BASE_LON + 0.0003, frp: 9 }),
-    det({ id: "v3", latitude: BASE_LAT + 0.0001, longitude: BASE_LON + 0.0002, frp: 4 }),
+    det({
+      id: "v2",
+      latitude: BASE_LAT + 0.0003,
+      longitude: BASE_LON + 0.0003,
+      frp: 9,
+    }),
+    det({
+      id: "v3",
+      latitude: BASE_LAT + 0.0001,
+      longitude: BASE_LON + 0.0002,
+      frp: 4,
+    }),
   ];
   const result = harmonizeToGrid(points);
   assert.equal(result.length, 1);
@@ -90,6 +112,12 @@ test("adjacent VIIRS sub-pixels within one grid cell collapse too", () => {
 });
 
 test("gridCell is stable for nearby points and differs for distant ones", () => {
-  assert.equal(gridCell(BASE_LAT, BASE_LON), gridCell(BASE_LAT + 0.0003, BASE_LON + 0.0003));
-  assert.notEqual(gridCell(BASE_LAT, BASE_LON), gridCell(BASE_LAT + 0.015, BASE_LON + 0.015));
+  assert.equal(
+    gridCell(BASE_LAT, BASE_LON),
+    gridCell(BASE_LAT + 0.0003, BASE_LON + 0.0003),
+  );
+  assert.notEqual(
+    gridCell(BASE_LAT, BASE_LON),
+    gridCell(BASE_LAT + 0.015, BASE_LON + 0.015),
+  );
 });
