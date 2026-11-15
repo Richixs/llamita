@@ -10,7 +10,6 @@ function newClient(url: string) {
     disableOfflineQueue: true,
     socket: {
       connectTimeout: 1500,
-      socketTimeout: 2000,
       reconnectStrategy: false,
     },
   });
@@ -45,7 +44,7 @@ export const redisStore: CacheStore = {
   async get(key) {
     const redis = await connection();
     if (!redis) return null;
-    const stored = await redis.get(key);
+    const stored = await redis.withCommandOptions({ timeout: 2000 }).get(key);
     return stored
       ? (
           await decompress(Buffer.from(stored, "base64"), {
@@ -59,7 +58,9 @@ export const redisStore: CacheStore = {
     if (!redis) return;
     const zipped = await compress(value);
     if (zipped.length > 16 * 1024 * 1024) return;
-    await redis.set(key, zipped.toString("base64"), { EX: ttl });
+    await redis
+      .withCommandOptions({ timeout: 2000 })
+      .set(key, zipped.toString("base64"), { EX: ttl });
   },
 };
 

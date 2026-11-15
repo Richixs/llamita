@@ -81,5 +81,8 @@ test(
     });
     await new Promise((resolve) => setTimeout(resolve, 1100));
     assert.equal(await redisStore.get(key), null);
+    await redisStore.set(key, "idle-connection", 10);
+    await new Promise((resolve) => setTimeout(resolve, 2200));
+    assert.equal(await redisStore.get(key), "idle-connection");
   },
 );
