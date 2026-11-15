@@ -24,6 +24,8 @@ export function dateLabel(
   date: string,
   options: Intl.DateTimeFormatOptions = {},
 ) {
+  if (!date || !Number.isFinite(Date.parse(date)))
+    return "Fecha no seleccionada";
   return new Intl.DateTimeFormat("es-BO", {
     day: "numeric",
     month: "short",
@@ -44,6 +46,13 @@ export function dateOffset(date: string, days: number) {
 }
 export function periodError(from: string, to: string) {
   if (!from || !to) return "Selecciona las fechas del periodo.";
+  if (
+    ![from, to].every(
+      (value) =>
+        /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(Date.parse(value)),
+    )
+  )
+    return "Las fechas no son válidas.";
   if (from > to)
     return "La fecha de inicio debe ser anterior o igual a la fecha final.";
   if ((Date.parse(to) - Date.parse(from)) / 86400000 > 365)

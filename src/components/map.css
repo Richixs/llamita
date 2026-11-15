@@ -198,7 +198,8 @@
 .map-tools button:hover {
   background: var(--color-superficie-2);
 }
-.map-tools .active {
+.map-tools button.active,
+.map-tools button.active:hover {
   background: var(--color-carbon);
   color: var(--color-lana);
 }

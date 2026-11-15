@@ -7,8 +7,9 @@ export function DailyChart({
   compact?: boolean;
 }) {
   const max = Math.max(1, ...values.map((v) => v.count));
-  const ceiling = Math.max(50, Math.ceil(max / 50) * 50);
-  const width = 1200,
+  const tick = max > 1000 ? 500 : max > 200 ? 100 : max > 50 ? 50 : 10;
+  const ceiling = Math.ceil(max / (tick * 4)) * tick * 4;
+  const width = compact ? 500 : 1200,
     height = compact ? 220 : 300,
     left = 38,
     bottom = 30,
@@ -47,9 +48,7 @@ export function DailyChart({
           const x = left + barWidth * i + barWidth * 0.25;
           return (
             <g key={v.name}>
-              <title>
-                {dateLabel(v.name)}: {v.count} focos
-              </title>
+              <title>{`${dateLabel(v.name)}: ${v.count} focos`}</title>
               <rect
                 x={x}
                 y={top + graphHeight - h}

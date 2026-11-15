@@ -164,6 +164,18 @@ const totals: [string, number][] = [
   ["Morochata", 6],
 ];
 const previous: Detection[] = [];
+// Preserve the daily trend from the design, scaled to the remaining 942 points.
+const dayWeights = [42, 55, 61, 78, 96, 120, 134, 151, 186, 112, 88, 70, 64];
+const weightTotal = dayWeights.reduce((sum, value) => sum + value, 0);
+function previousDay(index: number) {
+  const slot = (((index * 317) % 942) / 942) * weightTotal;
+  let cumulative = 0;
+  for (let i = 0; i < dayWeights.length; i++) {
+    cumulative += dayWeights[i];
+    if (slot < cumulative) return i + 1;
+  }
+  return 13;
+}
 for (const [name, total] of totals) {
   const count = daily.filter((d) => d.municipality === name).length;
   const center = centers.find((c) => c[0] === name)!;
@@ -175,7 +187,7 @@ for (const [name, total] of totals) {
         center[1] + Math.sin(index * 7.13) * 26,
         center[2] + Math.cos(index * 3.71) * 18,
         index,
-        1 + (index % 13),
+        previousDay(index),
       ),
     );
   }
