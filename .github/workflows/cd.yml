@@ -90,7 +90,7 @@ jobs:
     environment: ${{ needs.setup-env.outputs.gh_env }}
     env:
       OVERLAY: ${{ needs.setup-env.outputs.overlay }}
-      IMAGE_URI: ${{ env.REGISTRY }}/${{ needs.setup-env.outputs.image }}:${{ needs.setup-env.outputs.tag }}
+      IMAGE_URI: ghcr.io/${{ needs.setup-env.outputs.image }}:${{ needs.setup-env.outputs.tag }}
       DEPLOY_REPO_URL: ${{ vars.DEPLOY_REPO_URL || 'lab.sasxr.com/s-system/deploy.git' }}
     steps:
       - name: Clone GitLab deploy repository
@@ -112,7 +112,7 @@ jobs:
         run: |
           git config user.email "github-actions@sasxr.com"
           git config user.name "GitHub Actions"
-          git add "${{ env.APP_K8S_DIR }}/overlays/${{ env.OVERLAY }}/kustomization.yaml"
+          git add "${APP_K8S_DIR}/overlays/${OVERLAY}/kustomization.yaml"
           if ! git diff --cached --quiet; then
             git commit -m "chore(llamita): update ${OVERLAY} image to ${GITHUB_SHA::7}"
             git pull --rebase origin main
