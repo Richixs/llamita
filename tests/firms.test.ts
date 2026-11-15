@@ -33,7 +33,7 @@ test("date ranges are partitioned without gaps or overlaps", () => {
   assert.throws(() =>
     parseHotspotQuery(
       new URLSearchParams({
-        from: "2026-01-01",
+        from: "2025-01-01",
         to: "2026-12-31",
         bbox: "-67,-18,-66,-17",
       }),

@@ -23,7 +23,7 @@ export const GAMC_LAYERS = [
   },
 ] as const;
 export type GamcLayerId = (typeof GAMC_LAYERS)[number]["id"];
-export const MAX_QUERY_DAYS = 31;
+export const MAX_QUERY_DAYS = 365;
 export function boliviaToday() {
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/La_Paz",
