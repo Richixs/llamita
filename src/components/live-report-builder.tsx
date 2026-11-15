@@ -1,6 +1,9 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { LocalTerritorialFilters } from "./local-territorial-filters";
+import { MUNICIPALITIES_BY_PROVINCE } from "@/lib/geo/names";
+import { boundaryBbox } from "@/lib/geo/geojson-bbox";
 import { GeographicScopeControl } from "./geographic-scope-control";
 import { scopeLabel } from "@/lib/geo/scope";
 import { useApp } from "./app-provider";
@@ -9,7 +12,7 @@ import { ReportFormatPreview } from "./report-format-preview";
 import { reportQueryKey } from "@/lib/llamita/report-model";
 import { Icon, type IconName } from "./icon";
 import { dateLabel, number } from "@/lib/llamita/filters";
-import { WORLD_BBOX } from "@/lib/geo/catalog";
+import { WORLD_BBOX, REGIONAL_BBOX } from "@/lib/geo/catalog";
 import {
   DRAFT_STORAGE_KEY,
   REPORT_STORAGE_KEY,
@@ -41,6 +44,7 @@ export function LiveReportBuilder() {
     total: 0,
   });
   const generation = useRef<AbortController | null>(null);
+  const boundaryRequest = useRef<AbortController | null>(null);
   const [reports, setReports] = useState<SavedReport[]>([]);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -55,7 +59,13 @@ export function LiveReportBuilder() {
   });
   const current = reportQueryKey(config) === reportQueryKey(queryConfig);
   const data = reportData(config, live.data);
-  useEffect(() => () => generation.current?.abort(), []);
+  useEffect(
+    () => () => {
+      generation.current?.abort();
+      boundaryRequest.current?.abort();
+    },
+    [],
+  );
   useEffect(() => {
     function load() {
       try {
@@ -74,6 +84,44 @@ export function LiveReportBuilder() {
     setConfig((c) => ({ ...c, ...patch }));
     setError("");
   };
+  function selectLocalArea(value: { province: string; municipality: string }) {
+    boundaryRequest.current?.abort();
+    const controller = new AbortController();
+    boundaryRequest.current = controller;
+    const name = value.municipality || value.province;
+    const areaType = value.municipality
+      ? "municipality"
+      : value.province
+        ? "province"
+        : "all";
+    update({ areaType, areas: name ? [name] : [], bbox: REGIONAL_BBOX });
+    if (!name) return;
+    void fetch(
+      `/api/geo/boundary?type=${areaType}&name=${encodeURIComponent(name)}`,
+      { signal: controller.signal },
+    )
+      .then(async (response) => {
+        if (!response.ok)
+          throw Error("No se pudo cargar el límite del área seleccionada.");
+        return response.json();
+      })
+      .then((feature) => {
+        if (!controller.signal.aborted)
+          setConfig((c) =>
+            c.local && c.areaType === areaType && c.areas.includes(name)
+              ? { ...c, bbox: boundaryBbox(feature) }
+              : c,
+          );
+      })
+      .catch((error) => {
+        if (!controller.signal.aborted)
+          setError(
+            error instanceof Error
+              ? error.message
+              : "No se pudo cargar el límite.",
+          );
+      });
+  }
   function persist(next: SavedReport[]) {
     setReports(next);
     try {
@@ -219,6 +267,26 @@ export function LiveReportBuilder() {
                     })
                   }
                 />
+                {config.local && (
+                  <LocalTerritorialFilters
+                    province={
+                      config.areaType === "province"
+                        ? config.areas[0] || ""
+                        : config.areaType === "municipality"
+                          ? Object.entries(MUNICIPALITIES_BY_PROVINCE).find(
+                              ([, members]) =>
+                                members.includes(config.areas[0]),
+                            )?.[0] || ""
+                          : ""
+                    }
+                    municipality={
+                      config.areaType === "municipality"
+                        ? config.areas[0] || ""
+                        : ""
+                    }
+                    onChange={selectLocalArea}
+                  />
+                )}
                 <p>{scopeLabel(config)} · área seleccionada en el mapa:</p>
                 <p className="mono text-caption">
                   {(config.bbox || WORLD_BBOX).join(", ")}

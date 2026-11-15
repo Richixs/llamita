@@ -12,16 +12,15 @@
 .data-notices details p {
   margin-top: 8px;
 }
-.unavailable-filters {
+.territorial-filters {
   border: 0;
   padding: 0;
   margin: 4px 0;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  opacity: 0.65;
 }
-.unavailable-filters legend {
+.territorial-filters legend {
   margin-bottom: 12px;
 }
 .geographic-map,

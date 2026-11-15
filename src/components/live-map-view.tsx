@@ -15,11 +15,7 @@ import {
 import { dateOffset, number, periodLabel } from "@/lib/llamita/filters";
 import { GeographicScopeControl } from "./geographic-scope-control";
 import { boundaryBbox } from "@/lib/geo/geojson-bbox";
-import {
-  COCHABAMBA_MUNICIPALITIES,
-  COCHABAMBA_PROVINCES,
-  MUNICIPALITIES_BY_PROVINCE,
-} from "@/lib/geo/names";
+import { LocalTerritorialFilters } from "./local-territorial-filters";
 import type { Detection } from "@/lib/llamita/data";
 import type { FeatureInfo, MapApi } from "./geographic-map";
 import "./map.css";
@@ -234,6 +230,13 @@ export function LiveMapView({ initialFocus = "" }: { initialFocus?: string }) {
               setPoint(null);
             }}
           />
+          {filters.local && (
+            <LocalTerritorialFilters
+              province={filters.province}
+              municipality={filters.municipality}
+              onChange={updateFilters}
+            />
+          )}
           <p className="text-caption muted">
             {filters.country
               ? "Consulta recortada al país seleccionado."
@@ -255,67 +258,6 @@ export function LiveMapView({ initialFocus = "" }: { initialFocus?: string }) {
             Mueve el mapa y consulta la vista para explorar cualquier región del
             mundo.
           </p>
-          {filters.local && (
-            <fieldset className="unavailable-filters">
-              <legend className="overline">Cochabamba · reto local</legend>
-              <label className="field">
-                Provincia
-                <select
-                  aria-label="Filtrar por provincia"
-                  value={filters.province}
-                  onChange={(e) => {
-                    const province = e.target.value;
-                    const allowed = province
-                      ? (MUNICIPALITIES_BY_PROVINCE[province] ?? [])
-                      : COCHABAMBA_MUNICIPALITIES;
-                    updateFilters({
-                      country: "BOL",
-                      continent: "América del Sur",
-                      province,
-                      municipality: allowed.includes(filters.municipality)
-                        ? filters.municipality
-                        : "",
-                    });
-                  }}
-                >
-                  <option value="">Todas</option>
-                  {COCHABAMBA_PROVINCES.map((name) => (
-                    <option key={name} value={name}>
-                      {name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="field">
-                Municipio
-                <select
-                  aria-label="Filtrar por municipio"
-                  value={filters.municipality}
-                  onChange={(e) =>
-                    updateFilters({
-                      country: "BOL",
-                      continent: "América del Sur",
-                      municipality: e.target.value,
-                    })
-                  }
-                >
-                  <option value="">Todos</option>
-                  {(filters.province
-                    ? (MUNICIPALITIES_BY_PROVINCE[filters.province] ?? [])
-                    : COCHABAMBA_MUNICIPALITIES
-                  ).map((name) => (
-                    <option key={name} value={name}>
-                      {name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="field">
-                TCO / áreas protegidas
-                <input placeholder="Fuente pendiente" disabled />
-              </label>
-            </fieldset>
-          )}
         </section>
         <section className="filter-group">
           <h2 className="overline">Satélite</h2>
