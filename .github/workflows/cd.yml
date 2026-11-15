@@ -1,0 +1,120 @@
+name: CD
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - "Dockerfile"
+      - ".dockerignore"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "src/**"
+      - "public/**"
+      - "next.config.ts"
+      - "tsconfig.json"
+      - "postcss.config.mjs"
+      - ".github/workflows/cd.yml"
+
+concurrency:
+  group: cd-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  APP_K8S_DIR: k8s/apps/richixs-space-apps-2026-llamita
+
+jobs:
+  setup-env:
+    name: Resolve Target Environment
+    runs-on: ubuntu-latest
+    outputs:
+      overlay: ${{ steps.set-vars.outputs.overlay }}
+      gh_env: ${{ steps.set-vars.outputs.gh_env }}
+      tag: ${{ steps.set-vars.outputs.tag }}
+      image: ${{ steps.set-vars.outputs.image }}
+    steps:
+      - name: Determine environment from branch
+        id: set-vars
+        run: |
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            echo "overlay=prod" >> "$GITHUB_OUTPUT"
+            echo "gh_env=production" >> "$GITHUB_OUTPUT"
+            echo "tag=prod-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          else
+            echo "overlay=dev" >> "$GITHUB_OUTPUT"
+            echo "gh_env=development" >> "$GITHUB_OUTPUT"
+            echo "tag=dev-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          fi
+          echo "image=$(echo '${{ env.IMAGE_NAME }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+
+  build-and-push:
+    name: Build & Push Image (${{ needs.setup-env.outputs.overlay }})
+    needs: setup-env
+    runs-on: ubuntu-latest
+    environment: ${{ needs.setup-env.outputs.gh_env }}
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: runner
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ needs.setup-env.outputs.image }}:${{ needs.setup-env.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ needs.setup-env.outputs.image }}:${{ needs.setup-env.outputs.overlay }}-latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  update-deploy-repo:
+    name: Update GitOps Manifests (${{ needs.setup-env.outputs.overlay }})
+    needs: [setup-env, build-and-push]
+    runs-on: ubuntu-latest
+    environment: ${{ needs.setup-env.outputs.gh_env }}
+    env:
+      OVERLAY: ${{ needs.setup-env.outputs.overlay }}
+      IMAGE_URI: ghcr.io/${{ needs.setup-env.outputs.image }}:${{ needs.setup-env.outputs.tag }}
+      DEPLOY_REPO_URL: ${{ vars.DEPLOY_REPO_URL || 'lab.sasxr.com/s-system/deploy.git' }}
+    steps:
+      - name: Clone GitLab deploy repository
+        env:
+          DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+        run: |
+          git config --global http.sslVerify false
+          git clone "https://oauth2:${DEPLOY_TOKEN}@${DEPLOY_REPO_URL}" deploy
+
+      - name: Update Kustomize image tag
+        working-directory: deploy/${{ env.APP_K8S_DIR }}/overlays/${{ env.OVERLAY }}
+        run: |
+          curl -sL "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.5.0/kustomize_v5.5.0_linux_amd64.tar.gz" | tar xz
+          ./kustomize edit set image llamita-app="${IMAGE_URI}"
+          rm -f kustomize
+
+      - name: Commit and push to GitLab
+        working-directory: deploy
+        run: |
+          git config user.email "github-actions@sasxr.com"
+          git config user.name "GitHub Actions"
+          git add "${APP_K8S_DIR}/overlays/${OVERLAY}/kustomization.yaml"
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(llamita): update ${OVERLAY} image to ${GITHUB_SHA::7}"
+            git pull --rebase origin main
+            git push origin main
+          fi
