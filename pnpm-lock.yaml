@@ -10,6 +10,12 @@ importers:
       "@mapbox/shp-write":
         specifier: ^0.4.3
         version: 0.4.3
+      "@turf/boolean-point-in-polygon":
+        specifier: ^7.4.0
+        version: 7.4.0
+      "@turf/helpers":
+        specifier: ^7.4.0
+        version: 7.4.0
       jspdf:
         specifier: ^4.2.1
         version: 4.2.1
@@ -32,6 +38,9 @@ importers:
       "@tailwindcss/turbopack":
         specifier: 4.3.3
         version: 4.3.3
+      "@types/geojson":
+        specifier: ^7946.0.16
+        version: 7946.0.16
       "@types/leaflet":
         specifier: ^1.9.22
         version: 1.9.22
@@ -857,6 +866,24 @@ packages:
     resolution:
       {
         integrity: sha512-FgL4wRgItNdXcDjcgYUSd59gNsWqNVK4GotjZimZMmt7OOIkRNqH2QEUcRXLdBDXvwTsi5rkYxDxzfrFUkmObQ==,
+      }
+
+  "@turf/boolean-point-in-polygon@7.4.0":
+    resolution:
+      {
+        integrity: sha512-GQrHc6WSDHhf32GB/b9AGyOeC05AQ3nGN7ooWTrlCYefKn7X9/2wG9BNexF47AuyDq5jPdOvITVR26BLFWV+mA==,
+      }
+
+  "@turf/helpers@7.4.0":
+    resolution:
+      {
+        integrity: sha512-7PAwLZqOdRzTI5g9bHvUwlloAXPDH/mlajtryk0tw4ZwGMtmXsAyF4QundsAMfy4u48Fyd3AUqMXY0SMxqJGWg==,
+      }
+
+  "@turf/invariant@7.4.0":
+    resolution:
+      {
+        integrity: sha512-OAsc3qdNx+tRqzWmMNFMnVlWWACIqnYqIejZKvb2oKkKPYJJrURPXZ6OdrGD58ljJMolLoqwIZGSx3VndaEjxg==,
       }
 
   "@types/estree@1.0.10":
@@ -2981,6 +3008,12 @@ packages:
       }
     engines: { node: ">=12" }
 
+  point-in-polygon-hao@1.2.4:
+    resolution:
+      {
+        integrity: sha512-x2pcvXeqhRHlNRdhLs/tgFapAbSSe86wa/eqmj1G6pWftbEs5aVRJhRGM6FYSUERKu0PjekJzMq0gsI2XyiclQ==,
+      }
+
   possible-typed-array-names@1.1.0:
     resolution:
       {
@@ -3180,6 +3213,12 @@ packages:
         integrity: sha512-9aZLIrhRaD97sgVhtJOW6ckOEh6/GnvQtdVNfdZ6s67+3/XwLS9lBcQYzEEhYVeUowN7pRzMLsyGhK2i/xvWbw==,
       }
     engines: { node: ">= 0.8.15" }
+
+  robust-predicates@3.0.3:
+    resolution:
+      {
+        integrity: sha512-NS3levdsRIUOmiJ8FZWCP7LG3QpJyrs/TE0Zpf1yvZu8cAJJ6QMW92H1c7kWpdIHo8RvmLxN/o2JXTKHp74lUA==,
+      }
 
   run-parallel@1.2.0:
     resolution:
@@ -4123,6 +4162,25 @@ snapshots:
       "@tailwindcss/node": 4.3.3
       "@tailwindcss/oxide": 4.3.3
       tailwindcss: 4.3.3
+
+  "@turf/boolean-point-in-polygon@7.4.0":
+    dependencies:
+      "@turf/helpers": 7.4.0
+      "@turf/invariant": 7.4.0
+      "@types/geojson": 7946.0.16
+      point-in-polygon-hao: 1.2.4
+      tslib: 2.9.1
+
+  "@turf/helpers@7.4.0":
+    dependencies:
+      "@types/geojson": 7946.0.16
+      tslib: 2.9.1
+
+  "@turf/invariant@7.4.0":
+    dependencies:
+      "@turf/helpers": 7.4.0
+      "@types/geojson": 7946.0.16
+      tslib: 2.9.1
 
   "@types/estree@1.0.10": {}
 
@@ -5526,6 +5584,10 @@ snapshots:
 
   picomatch@4.0.7: {}
 
+  point-in-polygon-hao@1.2.4:
+    dependencies:
+      robust-predicates: 3.0.3
+
   possible-typed-array-names@1.1.0: {}
 
   postcss@8.5.23:
@@ -5618,6 +5680,8 @@ snapshots:
 
   rgbcolor@1.0.1:
     optional: true
+
+  robust-predicates@3.0.3: {}
 
   run-parallel@1.2.0:
     dependencies:

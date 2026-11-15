@@ -1,10 +1,16 @@
 import { getAreaHotspots, getDataAvailability } from "./client";
 import { FirmsUpstreamError, FirmsValidationError } from "./errors";
 import { parseAreaCoordinates, parseDateParam } from "./validation";
-import type { FirmsHotspot, FirmsSource } from "./types";
+import type { FirmsAvailability, FirmsHotspot, FirmsSource } from "./types";
 import type { Detection } from "@/lib/llamita/data";
 import { MAX_QUERY_DAYS, type Bbox } from "@/lib/geo/catalog";
+import { findMunicipality, findProvince } from "@/lib/geo/boundaries";
+import { harmonizeToGrid } from "./grid";
 const DAY = 86400000;
+// Parallel FIRMS requests per hotspot query. Higher cuts wall-clock time for
+// wide date ranges (up to MAX_QUERY_DAYS), but the MAP_KEY quota (5000
+// transactions/10min) is shared across every concurrent user of this app.
+const UPSTREAM_CONCURRENCY = 6;
 export interface HotspotQuery {
   from: string;
   to: string;
@@ -77,8 +83,8 @@ export function toDetection(row: FirmsHotspot, source: FirmsSource): Detection {
     id: `firms-${source}-${row.acq_date}-${time}-${row.latitude}-${row.longitude}-${row.satellite}`,
     origin: "live",
     source,
-    municipality: "Sin asignar",
-    province: "Sin asignar",
+    municipality: findMunicipality(row.latitude, row.longitude),
+    province: findProvince(row.latitude, row.longitude),
     date: local.slice(0, 10),
     time: local.slice(11, 16),
     frp: row.frp,
@@ -91,18 +97,67 @@ export function toDetection(row: FirmsHotspot, source: FirmsSource): Detection {
     y: row.latitude,
   };
 }
+// Each satellite has two products: "NRT" (near real-time, a rolling window
+// of only the last few months) and "SP" (standard processing, the historical
+// archive). A query for an old date range gets nothing from NRT, so older
+// portions of the requested period are routed to the matching SP product.
+interface SourceFamily {
+  nrt: FirmsSource;
+  sp: FirmsSource;
+}
+const VIIRS_FAMILIES: SourceFamily[] = [
+  { nrt: "VIIRS_SNPP_NRT", sp: "VIIRS_SNPP_SP" },
+  { nrt: "VIIRS_NOAA20_NRT", sp: "VIIRS_NOAA20_SP" },
+  { nrt: "VIIRS_NOAA21_NRT", sp: "VIIRS_NOAA21_SP" },
+];
+const MODIS_FAMILY: SourceFamily = { nrt: "MODIS_NRT", sp: "MODIS_SP" };
+
+function planFamily(
+  family: SourceFamily,
+  from: string,
+  toExclusive: string,
+  availability: FirmsAvailability[],
+  warnings: string[],
+): { source: FirmsSource; from: string; to: string }[] {
+  const legs: { source: FirmsSource; from: string; to: string }[] = [];
+  const nrtDates = availability.find((a) => a.data_id === family.nrt);
+  const spDates = availability.find((a) => a.data_id === family.sp);
+
+  let nrtFrom: string | null = null;
+  if (nrtDates) {
+    const f = from > nrtDates.min_date ? from : nrtDates.min_date;
+    const t = toExclusive < nrtDates.max_date ? toExclusive : nrtDates.max_date;
+    if (f <= t) {
+      legs.push({ source: family.nrt, from: f, to: t });
+      nrtFrom = f;
+    }
+  }
+
+  // The portion older than where NRT's rolling window begins (or the whole
+  // requested period, if NRT has no overlap at all) falls back to SP.
+  const gapEnd = nrtFrom ?? toExclusive;
+  if (gapEnd > from) {
+    if (spDates) {
+      const f = from > spDates.min_date ? from : spDates.min_date;
+      const t = gapEnd < spDates.max_date ? gapEnd : spDates.max_date;
+      if (f <= t) legs.push({ source: family.sp, from: f, to: t });
+    }
+  }
+
+  if (!legs.length)
+    warnings.push(
+      `${family.nrt}/${family.sp} no disponen de datos en el periodo elegido.`,
+    );
+  return legs;
+}
+
 async function fetchHotspots(query: HotspotQuery): Promise<HotspotResult> {
-  const viirs: FirmsSource[] = [
-    "VIIRS_SNPP_NRT",
-    "VIIRS_NOAA20_NRT",
-    "VIIRS_NOAA21_NRT",
-  ];
-  const sources =
+  const families =
     query.sensor === "VIIRS"
-      ? viirs
+      ? VIIRS_FAMILIES
       : query.sensor === "MODIS"
-        ? ["MODIS_NRT" as const]
-        : [...viirs, "MODIS_NRT" as const];
+        ? [MODIS_FAMILY]
+        : [...VIIRS_FAMILIES, MODIS_FAMILY];
   const availability = await getDataAvailability("all");
   // FIRMS dates are UTC. A Bolivia calendar day ends at 04:00 UTC next day.
   const utcEnd = new Date(Date.parse(query.to) + DAY)
@@ -110,23 +165,16 @@ async function fetchHotspots(query: HotspotQuery): Promise<HotspotResult> {
     .slice(0, 10);
   const tasks: { source: FirmsSource; date: string; dayRange: number }[] = [];
   const warnings: string[] = [];
-  for (const source of sources) {
-    const dates = availability.find((a) => a.data_id === source);
-    if (!dates) {
-      warnings.push(`No se pudo confirmar la disponibilidad de ${source}.`);
-      continue;
-    }
-    const from = query.from > dates.min_date ? query.from : dates.min_date;
-    const to = utcEnd < dates.max_date ? utcEnd : dates.max_date;
-    if (from > to) {
-      warnings.push(`${source} no dispone de datos en el periodo elegido.`);
-      continue;
-    }
-    if (from !== query.from || to !== utcEnd)
-      warnings.push(
-        `${source}: cobertura UTC disponible del ${dates.min_date} al ${dates.max_date}. El periodo puede estar incompleto.`,
+  for (const family of families) {
+    const legs = planFamily(family, query.from, utcEnd, availability, warnings);
+    for (const leg of legs) {
+      tasks.push(
+        ...dateChunks(leg.from, leg.to).map((c) => ({
+          ...c,
+          source: leg.source,
+        })),
       );
-    tasks.push(...dateChunks(from, to).map((c) => ({ ...c, source })));
+    }
   }
   const unique = new Map<string, Detection>();
   let completed = 0;
@@ -163,14 +211,14 @@ async function fetchHotspots(query: HotspotQuery): Promise<HotspotResult> {
       }
     }
   }
-  await Promise.all([worker(), worker()]);
+  await Promise.all(Array.from({ length: UPSTREAM_CONCURRENCY }, worker));
   if (failed && !completed)
     throw new FirmsUpstreamError(
       "No se pudieron obtener detecciones de NASA FIRMS. Comprueba la clave, la disponibilidad y la cuota e intenta nuevamente.",
       502,
     );
   return {
-    data: [...unique.values()].sort(
+    data: harmonizeToGrid([...unique.values()]).sort(
       (a, b) =>
         b.date.localeCompare(a.date) ||
         b.time.localeCompare(a.time) ||

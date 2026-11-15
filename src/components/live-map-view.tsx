@@ -2,17 +2,24 @@
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useApp } from "./app-provider";
 import { DataModeControl, DataNotice } from "./data-mode-control";
 import { Icon } from "./icon";
 import {
   GAMC_BBOX,
   GAMC_LAYERS,
+  MAX_QUERY_DAYS,
   REGIONAL_BBOX,
   type GamcLayerId,
 } from "@/lib/geo/catalog";
 import { dateOffset, number, periodLabel } from "@/lib/llamita/filters";
+import { boundaryBbox } from "@/lib/geo/geojson-bbox";
+import {
+  COCHABAMBA_MUNICIPALITIES,
+  COCHABAMBA_PROVINCES,
+  MUNICIPALITIES_BY_PROVINCE,
+} from "@/lib/geo/names";
 import type { Detection } from "@/lib/llamita/data";
 import type { FeatureInfo, MapApi } from "./geographic-map";
 import "./map.css";
@@ -30,6 +37,7 @@ export function LiveMapView({ initialFocus = "" }: { initialFocus?: string }) {
     filters,
     updateFilters,
     resetFilters,
+    mode,
     data,
     loading,
     error,
@@ -46,14 +54,50 @@ export function LiveMapView({ initialFocus = "" }: { initialFocus?: string }) {
   const [dismissedFocus, setDismissedFocus] = useState(false);
   const [features, setFeatures] = useState<FeatureInfo[] | null>(null);
   const [layerErrors, setLayerErrors] = useState<string[]>([]);
+  const [selectedBoundary, setSelectedBoundary] = useState<GeoJSON.Feature<
+    GeoJSON.Polygon | GeoJSON.MultiPolygon
+  > | null>(null);
   const apiRef = useRef<MapApi | null>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const type = filters.municipality
+      ? "municipality"
+      : filters.province
+        ? "province"
+        : null;
+    const name = filters.municipality || filters.province;
+    const controller = new AbortController();
+    (async () => {
+      if (!type || !name) {
+        setSelectedBoundary(null);
+        return;
+      }
+      try {
+        const res = await fetch(
+          `/api/geo/boundary?type=${type}&name=${encodeURIComponent(name)}`,
+          { signal: controller.signal },
+        );
+        const feature = res.ok ? await res.json() : null;
+        setSelectedBoundary(feature);
+        // The query area follows the selection, so it never silently stays
+        // pointed at a bbox (e.g. "Cobertura municipal GAMC") that excludes
+        // the province/municipio the user just picked.
+        if (feature) setBbox(boundaryBbox(feature));
+      } catch {
+        if (!controller.signal.aborted) setSelectedBoundary(null);
+      }
+    })();
+    return () => controller.abort();
+  }, [filters.province, filters.municipality, setBbox]);
   const onLayerError = useCallback(
     (name: string) =>
       setLayerErrors((current) =>
         current.includes(name) ? current : [...current, name],
       ),
     [],
+  );
+  const rangeDays = Math.round(
+    (Date.parse(filters.to) - Date.parse(filters.from)) / 86400000,
   );
   const selectedPoint =
     point && data.some((d) => d.id === point.id)
@@ -158,9 +202,15 @@ export function LiveMapView({ initialFocus = "" }: { initialFocus?: string }) {
             ))}
           </div>
           <p className="text-caption muted">
-            Hasta 31 días por consulta. La disponibilidad depende del producto
-            de NASA.
+            Hasta {MAX_QUERY_DAYS} días por consulta. La disponibilidad depende
+            del producto de NASA.
           </p>
+          {mode === "live" && rangeDays > 60 && (
+            <p className="text-caption muted" role="status">
+              Rango amplio ({number(rangeDays)} días): la consulta puede tardar
+              varios segundos.
+            </p>
+          )}
         </section>
         <section className="filter-group">
           <h2 className="overline">Área de consulta</h2>
@@ -204,19 +254,57 @@ export function LiveMapView({ initialFocus = "" }: { initialFocus?: string }) {
             Se incluyen todos los puntos dentro del rectángulo, sin recorte por
             límites administrativos.
           </p>
-          <fieldset className="unavailable-filters" disabled>
+          <fieldset className="unavailable-filters">
             <legend className="overline">Filtros territoriales</legend>
             <label className="field">
               Provincia
-              <input placeholder="Requiere límites vectoriales" />
+              <select
+                aria-label="Filtrar por provincia"
+                value={filters.province}
+                onChange={(e) => {
+                  const province = e.target.value;
+                  const allowed = province
+                    ? (MUNICIPALITIES_BY_PROVINCE[province] ?? [])
+                    : COCHABAMBA_MUNICIPALITIES;
+                  updateFilters({
+                    province,
+                    municipality: allowed.includes(filters.municipality)
+                      ? filters.municipality
+                      : "",
+                  });
+                }}
+              >
+                <option value="">Todas</option>
+                {COCHABAMBA_PROVINCES.map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+              </select>
             </label>
             <label className="field">
               Municipio
-              <input placeholder="Requiere límites vectoriales" />
+              <select
+                aria-label="Filtrar por municipio"
+                value={filters.municipality}
+                onChange={(e) =>
+                  updateFilters({ municipality: e.target.value })
+                }
+              >
+                <option value="">Todos</option>
+                {(filters.province
+                  ? (MUNICIPALITIES_BY_PROVINCE[filters.province] ?? [])
+                  : COCHABAMBA_MUNICIPALITIES
+                ).map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+              </select>
             </label>
             <label className="field">
               TCO / áreas protegidas
-              <input placeholder="Fuente pendiente" />
+              <input placeholder="Fuente pendiente" disabled />
             </label>
           </fieldset>
         </section>
@@ -253,6 +341,7 @@ export function LiveMapView({ initialFocus = "" }: { initialFocus?: string }) {
           onFeatures={setFeatures}
           onLayerError={onLayerError}
           apiRef={apiRef}
+          selectedBoundary={selectedBoundary}
         />
         <div className="map-summary">
           <Icon name="flame" />

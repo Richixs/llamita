@@ -81,6 +81,11 @@ export interface Detection {
   y: number;
   latitude: number;
   longitude: number;
+  // Set when this record merges several raw sensor pixels onto a common
+  // ~1km grid cell (see src/lib/firms/grid.ts): the FIRMS products that
+  // detected it, and how many raw pixels were collapsed into this point.
+  detectedBy?: string[];
+  observationCount?: number;
 }
 const centers: [string, number, number][] = [
   ["Villa Tunari", 926, 315],

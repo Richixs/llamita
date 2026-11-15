@@ -33,8 +33,27 @@ test("date ranges are partitioned without gaps or overlaps", () => {
   assert.throws(() =>
     parseHotspotQuery(
       new URLSearchParams({
-        from: "2026-01-01",
+        from: "2025-01-01",
         to: "2026-12-31",
+        bbox: "-67,-18,-66,-17",
+      }),
+    ),
+  );
+  // 2020 is a leap year: Jan 1 - Dec 31 is 366 days, and must still fit.
+  assert.doesNotThrow(() =>
+    parseHotspotQuery(
+      new URLSearchParams({
+        from: "2020-01-01",
+        to: "2020-12-31",
+        bbox: "-67,-18,-66,-17",
+      }),
+    ),
+  );
+  assert.throws(() =>
+    parseHotspotQuery(
+      new URLSearchParams({
+        from: "2019-12-31",
+        to: "2020-12-31",
         bbox: "-67,-18,-66,-17",
       }),
     ),
@@ -54,7 +73,7 @@ test("UTC observations cross Bolivia midnight correctly", () => {
   assert.equal(d.time, "22:14");
   assert.equal(d.latitude, -17);
   assert.equal(d.origin, "live");
-  assert.equal(d.municipality, "Sin asignar");
+  assert.equal(d.municipality, "Villa Tunari");
 });
 test("country endpoints fail clearly without calling unavailable NASA services", async () => {
   await assert.rejects(getCountries(), /deshabilitado/);
@@ -172,12 +191,53 @@ test("combined queries deduplicate observations and filter by Bolivia days and b
     bbox: [-67, -18, -66, -17] as [number, number, number, number],
   };
   const result = await queryHotspots(query);
-  assert.equal(result.data.length, 2);
+  // Both surviving observations sit at the exact same coordinates and
+  // Bolivia-local day, so the grid harmonization step merges them into one.
+  assert.equal(result.data.length, 1);
   assert.ok(
     result.data.every((d) => d.date === "2026-11-14" && d.origin === "live"),
   );
   assert.equal(result.data[0].time, "23:59");
+  assert.equal(result.data[0].observationCount, 2);
   assert.equal(requests, 2);
   await queryHotspots(query);
   assert.equal(requests, 2, "identical queries reuse the bounded server cache");
+});
+test("historical date ranges fall back to the SP archive product", async (t) => {
+  const { queryHotspots } = await import("../src/lib/firms/query");
+  const original = globalThis.fetch,
+    key = process.env.FIRMS_MAP_KEY;
+  process.env.FIRMS_MAP_KEY = "private-test-key";
+  t.after(() => {
+    globalThis.fetch = original;
+    if (key === undefined) delete process.env.FIRMS_MAP_KEY;
+    else process.env.FIRMS_MAP_KEY = key;
+  });
+  const requestedSources: string[] = [];
+  globalThis.fetch = async (input) => {
+    const url = String(input);
+    if (url.includes("data_availability"))
+      return new Response(
+        "data_id,min_date,max_date\nMODIS_NRT,2026-09-01,2026-11-20\nMODIS_SP,2000-11-01,2026-08-31\n",
+      );
+    const match = url.match(/\/api\/area\/csv\/[^/]+\/([^/]+)\//);
+    if (match) requestedSources.push(match[1]);
+    return new Response(
+      "latitude,longitude,acq_date,acq_time,frp,satellite\n-17.5,-66.5,2020-06-01,0300,9,T\n",
+    );
+  };
+  // Fully inside 2020: outside MODIS_NRT's window, inside MODIS_SP's.
+  const query = {
+    from: "2020-01-01",
+    to: "2020-12-31",
+    sensor: "MODIS" as const,
+    bbox: [-69, -19, -68, -18] as [number, number, number, number],
+  };
+  const result = await queryHotspots(query);
+  assert.ok(requestedSources.length > 0);
+  assert.ok(
+    requestedSources.every((s) => s === "MODIS_SP"),
+    "a fully historical range must only hit the SP product",
+  );
+  assert.ok(result.data.every((d) => d.source === "MODIS_SP"));
 });

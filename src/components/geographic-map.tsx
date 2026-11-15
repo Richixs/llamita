@@ -26,6 +26,7 @@ export default function GeographicMap({
   onFeatures,
   onLayerError,
   apiRef,
+  selectedBoundary,
 }: {
   data: Detection[];
   bbox: Bbox;
@@ -37,6 +38,9 @@ export default function GeographicMap({
   onFeatures: (value: FeatureInfo[] | null) => void;
   onLayerError: (layer: string) => void;
   apiRef: React.RefObject<MapApi | null>;
+  selectedBoundary?: GeoJSON.Feature<
+    GeoJSON.Polygon | GeoJSON.MultiPolygon
+  > | null;
 }) {
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -232,6 +236,23 @@ export default function GeographicMap({
       map.removeLayer(group);
     };
   }, [data, showHotspots, focusId]);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !selectedBoundary) return;
+    const layer = L.geoJSON(selectedBoundary, {
+      style: {
+        color: "#C2361C",
+        weight: 2,
+        fill: true,
+        fillOpacity: 0.05,
+      },
+      interactive: false,
+    }).addTo(map);
+    map.fitBounds(layer.getBounds(), { padding: [24, 24] });
+    return () => {
+      map.removeLayer(layer);
+    };
+  }, [selectedBoundary]);
   return (
     <div
       ref={container}

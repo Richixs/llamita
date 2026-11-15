@@ -54,7 +54,10 @@ export function AppProvider({
           setFilters(mode === "demo" ? initialFilters : realFilters),
         mode,
         setMode,
-        data: mode === "demo" ? filterDetections(filters) : live.data,
+        data:
+          mode === "demo"
+            ? filterDetections(filters)
+            : filterDetections(filters, live.data),
         loading: live.loading,
         error: live.error,
         warnings: live.warnings,
