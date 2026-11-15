@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
+import { scopeLabel } from "@/lib/geo/scope";
 import { DataNotice } from "./data-mode-control";
 import { useApp } from "./app-provider";
 import { Icon } from "./icon";
@@ -42,7 +43,13 @@ export function StatisticsView() {
       <div className="page-heading">
         <div>
           <h1>Estadísticas de focos de calor</h1>
-          <p>Área consultada · {periodLabel(filters)}</p>
+          <p>
+            {scopeLabel({
+              ...filters,
+              areas: [filters.municipality || filters.province].filter(Boolean),
+            })}{" "}
+            · {periodLabel(filters)}
+          </p>
         </div>
         <button className="btn" onClick={csv} disabled={!data.length}>
           <Icon name="download" />

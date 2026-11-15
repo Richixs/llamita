@@ -60,6 +60,7 @@ export function reportData(
       ...initialFilters,
       ...config.sourceFilters,
       country: config.country,
+      local: config.local,
       continent: config.continent,
       mode: config.mode,
       from: config.from,

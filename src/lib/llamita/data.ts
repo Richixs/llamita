@@ -1,3 +1,7 @@
+import {
+  COCHABAMBA_PROVINCES,
+  COCHABAMBA_MUNICIPALITIES,
+} from "@/lib/geo/names";
 import type { Filters } from "./filters";
 export interface Detection {
   origin?: "live";
@@ -24,6 +28,14 @@ export interface Detection {
   detectedBy?: string[];
   observationCount?: number;
 }
+const localProvinces = new Set<string>(COCHABAMBA_PROVINCES);
+const localMunicipalities = new Set<string>(COCHABAMBA_MUNICIPALITIES);
+export function isCochabambaDetection(d: Detection) {
+  return (
+    d.countryCode === "BOL" &&
+    (localProvinces.has(d.province) || localMunicipalities.has(d.municipality))
+  );
+}
 const colors = ["#FFE3A3", "#F7B24A", "#E4632B", "#C2361C", "#7A1A10"];
 export function heatColor(frp: number) {
   return colors[frp < 5 ? 0 : frp < 10 ? 1 : frp < 25 ? 2 : frp <= 50 ? 3 : 4];
@@ -36,6 +48,7 @@ export function filterDetections(filters: Filters, source: Detection[]) {
       d.date <= filters.to &&
       (!filters.continent || d.continent === filters.continent) &&
       (!filters.country || d.countryCode === filters.country) &&
+      (!filters.local || isCochabambaDetection(d)) &&
       (!filters.province || d.province === filters.province) &&
       (!filters.municipality || d.municipality === filters.municipality) &&
       (!filters.territory || d.territory === filters.territory) &&

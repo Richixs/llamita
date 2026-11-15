@@ -10,3 +10,5 @@ import "./cache.test.ts";
 import "./reports.test.ts";
 
 import "./snapshot.test.ts";
+
+import "./local-scope.test.ts";
