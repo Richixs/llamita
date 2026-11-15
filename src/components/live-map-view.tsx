@@ -14,6 +14,7 @@ import {
   type GamcLayerId,
 } from "@/lib/geo/catalog";
 import { dateOffset, number, periodLabel } from "@/lib/llamita/filters";
+import { boundaryBbox } from "@/lib/geo/geojson-bbox";
 import {
   COCHABAMBA_MUNICIPALITIES,
   COCHABAMBA_PROVINCES,
@@ -71,13 +72,18 @@ export function LiveMapView({ initialFocus = "" }: { initialFocus?: string }) {
           `/api/geo/boundary?type=${type}&name=${encodeURIComponent(name)}`,
           { signal: controller.signal },
         );
-        setSelectedBoundary(res.ok ? await res.json() : null);
+        const feature = res.ok ? await res.json() : null;
+        setSelectedBoundary(feature);
+        // The query area follows the selection, so it never silently stays
+        // pointed at a bbox (e.g. "Cobertura municipal GAMC") that excludes
+        // the province/municipio the user just picked.
+        if (feature) setBbox(boundaryBbox(feature));
       } catch {
         if (!controller.signal.aborted) setSelectedBoundary(null);
       }
     })();
     return () => controller.abort();
-  }, [filters.province, filters.municipality]);
+  }, [filters.province, filters.municipality, setBbox]);
   const onLayerError = useCallback(
     (name: string) =>
       setLayerErrors((current) =>
