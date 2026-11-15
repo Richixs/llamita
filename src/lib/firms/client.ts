@@ -39,13 +39,25 @@ async function fetchFirmsText(path: string) {
       502,
     );
   }
+  const body = await response.text();
+  const quotaError =
+    /too many|exceed|maximum.*transaction|transaction.*(?:limit|maximum)|quota/i.test(
+      body,
+    );
   // Do not echo the upstream response: it may contain the key or the full URL.
+  if (
+    (!response.ok && quotaError) ||
+    /^(?:maximum|too many|exceeded)/i.test(body.trim())
+  )
+    throw new FirmsUpstreamError(
+      "NASA FIRMS alcanzó el límite temporal de transacciones. Conserva la selección y vuelve a actualizar la consulta cuando se renueve la ventana de 10 minutos. Los bloques disponibles en caché se reutilizan.",
+      429,
+    );
   if (!response.ok)
     throw new FirmsUpstreamError(
       `NASA FIRMS rechazó la consulta (HTTP ${response.status}).`,
       response.status,
     );
-  const body = await response.text();
   if (
     /^(?:invalid|error|map_key|maximum|too many|exceeded)/i.test(body.trim()) ||
     /^\s*</.test(body)

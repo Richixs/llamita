@@ -1,14 +1,13 @@
 import {
   isWideArea,
   MAX_GLOBAL_QUERY_DAYS,
-  MAX_QUERY_DAYS,
   type Bbox,
 } from "@/lib/geo/catalog";
 import { periodError } from "@/lib/llamita/filters";
 export function historyChunks(from: string, to: string, bbox: Bbox) {
   const error = periodError(from, to);
   if (error) throw new Error(error);
-  const size = isWideArea(bbox) ? MAX_GLOBAL_QUERY_DAYS : MAX_QUERY_DAYS;
+  const size = isWideArea(bbox) ? MAX_GLOBAL_QUERY_DAYS : 31;
   const result: { from: string; to: string }[] = [];
   const end = Date.parse(to);
   for (let start = Date.parse(from); start <= end; start += size * 86400000)

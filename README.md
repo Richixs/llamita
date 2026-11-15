@@ -12,11 +12,11 @@ docker compose up -d redis
 corepack pnpm dev
 ```
 
-`REDIS_URL=redis://127.0.0.1:6379` activa la caché compartida. En un alojamiento externo, configura la URL del servicio Redis (`redis://` o `rediss://`) únicamente en el servidor. No se expone al navegador. Redis es opcional: si falta o falla, se utiliza caché local acotada. Las consultas se almacenan comprimidas durante cinco minutos; no se guardan claves FIRMS en Redis. Los errores de NASA no se cachean. Las consultas simultáneas idénticas en una instancia comparten la misma petición.
+`REDIS_URL=redis://127.0.0.1:6379` activa la caché compartida. En un alojamiento externo, configura la URL del servicio Redis (`redis://` o `rediss://`) únicamente en el servidor. No se expone al navegador. Redis es opcional: si falta o falla, se utiliza caché local acotada. Las consultas se almacenan comprimidas durante cinco minutos para consultas recientes y 24 horas para históricos de más de 90 días; no se guardan claves FIRMS en Redis. Los errores de NASA no se cachean. Las consultas simultáneas idénticas en una instancia comparten la misma petición.
 
 ## Cobertura e histórico
 
-La [API de área de FIRMS](https://firms.modaps.eosdis.nasa.gov/api/area) admite un rectángulo o `world`. El histórico puede seleccionarse desde 2000 hasta la fecha actual, incluidos periodos de varios años. Se combina el archivo SP con los productos NRT según la disponibilidad publicada por NASA; VIIRS no tiene observaciones en los primeros años de MODIS. Los periodos se dividen en bloques para respetar el límite de cinco días de cada petición a NASA. Las consultas de cobertura amplia se procesan en bloques de cinco días; las regionales agrupan hasta un año por respuesta.
+La [API de área de FIRMS](https://firms.modaps.eosdis.nasa.gov/api/area) admite un rectángulo o `world`. El histórico puede seleccionarse desde 2000 hasta la fecha actual, incluidos periodos de varios años. Se combina el archivo SP con los productos NRT según la disponibilidad publicada por NASA; VIIRS no tiene observaciones en los primeros años de MODIS. Los periodos se dividen en bloques para respetar el límite de cinco días de cada petición a NASA. Las consultas de cobertura amplia se procesan en bloques de cinco días; las regionales se cargan en bloques de hasta 31 días.
 
 Un histórico mundial de muchos años puede requerir numerosas consultas y una sesión prolongada. La cuota de la MAP_KEY y la disponibilidad de NASA siguen aplicándose. Un resultado vacío o con avisos no demuestra ausencia de incendios. Las horas se presentan en UTC−4 para conservar una referencia uniforme.
 
@@ -30,3 +30,5 @@ corepack pnpm exec tsc --noEmit
 corepack pnpm lint
 corepack pnpm build
 ```
+
+Si NASA devuelve un rechazo por cuota, la consulta se detiene y conserva la selección; los bloques que sigan disponibles en Redis se reutilizan al actualizarla. La descarga de un reporte ya previsualizado utiliza sus datos cargados y no vuelve a consultar NASA.

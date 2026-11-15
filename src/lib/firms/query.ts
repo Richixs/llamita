@@ -218,6 +218,7 @@ async function fetchHotspots(query: HotspotQuery): Promise<HotspotResult> {
   const unique = new Map<string, Detection>();
   let completed = 0;
   let failed = 0;
+  let quotaError: FirmsUpstreamError | undefined;
   // Limit upstream concurrency and never retry implicitly against the user's quota.
   let next = 0;
   async function worker() {
@@ -248,6 +249,11 @@ async function fetchHotspots(query: HotspotQuery): Promise<HotspotResult> {
         }
         completed++;
       } catch (error) {
+        if (error instanceof FirmsUpstreamError && error.status === 429) {
+          quotaError = error;
+          next = tasks.length;
+          return;
+        }
         failed++;
         warnings.push(
           `${task.source} (${task.date}): ${error instanceof FirmsUpstreamError ? error.message : "No se pudo completar la consulta."}`,
@@ -256,6 +262,7 @@ async function fetchHotspots(query: HotspotQuery): Promise<HotspotResult> {
     }
   }
   await Promise.all(Array.from({ length: UPSTREAM_CONCURRENCY }, worker));
+  if (quotaError) throw quotaError;
   if (failed && !completed)
     throw new FirmsUpstreamError(
       "No se pudieron obtener detecciones de NASA FIRMS. Comprueba la clave, la disponibilidad y la cuota e intenta nuevamente.",
@@ -277,7 +284,15 @@ async function fetchHotspots(query: HotspotQuery): Promise<HotspotResult> {
 }
 
 const cached = createQueryCache<HotspotResult>({ store: redisStore, ttl: 300 });
+const historicalCache = createQueryCache<HotspotResult>({
+  store: redisStore,
+  ttl: 86400,
+});
 export function queryHotspots(query: HotspotQuery): Promise<HotspotResult> {
   const key = `llamita:firms:v3:${createHash("sha256").update(JSON.stringify(query)).digest("hex")}`;
-  return cached(key, () => fetchHotspots(query));
+  const cache =
+    Date.parse(query.to) < Date.now() - 90 * 86400000
+      ? historicalCache
+      : cached;
+  return cache(key, () => fetchHotspots(query));
 }
