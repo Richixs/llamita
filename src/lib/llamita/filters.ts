@@ -1,0 +1,52 @@
+export interface Filters {
+  mode: "day" | "range";
+  from: string;
+  to: string;
+  province: string;
+  municipality: string;
+  territory: string;
+  protectedArea: string;
+  satellite: "all" | "VIIRS" | "MODIS";
+}
+export const initialFilters: Filters = {
+  mode: "day",
+  from: "2026-11-14",
+  to: "2026-11-14",
+  province: "",
+  municipality: "",
+  territory: "",
+  protectedArea: "",
+  satellite: "all",
+};
+export const number = (value: number) =>
+  new Intl.NumberFormat("es-BO").format(value);
+export function dateLabel(
+  date: string,
+  options: Intl.DateTimeFormatOptions = {},
+) {
+  return new Intl.DateTimeFormat("es-BO", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "America/La_Paz",
+    ...options,
+  }).format(new Date(`${date}T12:00:00-04:00`));
+}
+export function periodLabel(filters: Pick<Filters, "mode" | "from" | "to">) {
+  return filters.mode === "day"
+    ? dateLabel(filters.to, { weekday: "short" })
+    : `${dateLabel(filters.from)} al ${dateLabel(filters.to)}`;
+}
+export function dateOffset(date: string, days: number) {
+  const value = new Date(`${date}T12:00:00Z`);
+  value.setUTCDate(value.getUTCDate() + days);
+  return value.toISOString().slice(0, 10);
+}
+export function periodError(from: string, to: string) {
+  if (!from || !to) return "Selecciona las fechas del periodo.";
+  if (from > to)
+    return "La fecha de inicio debe ser anterior o igual a la fecha final.";
+  if ((Date.parse(to) - Date.parse(from)) / 86400000 > 365)
+    return "El periodo puede tener hasta 366 días.";
+  return "";
+}
