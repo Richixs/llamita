@@ -5,6 +5,7 @@ import type { FirmsAvailability, FirmsHotspot, FirmsSource } from "./types";
 import type { Detection } from "@/lib/llamita/data";
 import { MAX_QUERY_DAYS, type Bbox } from "@/lib/geo/catalog";
 import { findMunicipality, findProvince } from "@/lib/geo/boundaries";
+import { harmonizeToGrid } from "./grid";
 const DAY = 86400000;
 // Parallel FIRMS requests per hotspot query. Higher cuts wall-clock time for
 // wide date ranges (up to MAX_QUERY_DAYS), but the MAP_KEY quota (5000
@@ -212,7 +213,7 @@ async function fetchHotspots(query: HotspotQuery): Promise<HotspotResult> {
       502,
     );
   return {
-    data: [...unique.values()].sort(
+    data: harmonizeToGrid([...unique.values()]).sort(
       (a, b) =>
         b.date.localeCompare(a.date) ||
         b.time.localeCompare(a.time) ||
