@@ -1,38 +1,65 @@
 import type { Metadata } from "next";
-import { Space_Grotesk, IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
+import { connection } from "next/server";
+import { boliviaToday } from "@/lib/geo/catalog";
+import localFont from "next/font/local";
+import { AppProvider } from "@/components/app-provider";
+import { Header } from "@/components/header";
 import "./globals.css";
+import "@/components/live-map.css";
 
-const spaceGrotesk = Space_Grotesk({
-  variable: "--font-display",
-  subsets: ["latin"],
-  weight: ["500", "600", "700"],
+const display = localFont({
+  src: [
+    { path: "../../public/fonts/space-grotesk-500.ttf", weight: "500" },
+    { path: "../../public/fonts/space-grotesk-700.ttf", weight: "700" },
+  ],
+  variable: "--font-heading",
+  display: "swap",
 });
-
-const ibmPlexSans = IBM_Plex_Sans({
-  variable: "--font-sans",
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
+const text = localFont({
+  src: [
+    { path: "../../public/fonts/ibm-plex-sans-400.ttf", weight: "400" },
+    { path: "../../public/fonts/ibm-plex-sans-500.ttf", weight: "500" },
+    { path: "../../public/fonts/ibm-plex-sans-600.ttf", weight: "600" },
+  ],
+  variable: "--font-text",
+  display: "swap",
 });
-
-const ibmPlexMono = IBM_Plex_Mono({
-  variable: "--font-mono",
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
+const data = localFont({
+  src: [
+    { path: "../../public/fonts/ibm-plex-mono-400.ttf", weight: "400" },
+    { path: "../../public/fonts/ibm-plex-mono-500.ttf", weight: "500" },
+  ],
+  variable: "--font-data",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "Llamita",
-  description: "Wildfire and thermal hotspot monitoring across Bolivia",
+  title: {
+    default: "Llamita · Focos de calor en el mundo",
+    template: "%s · Llamita",
+  },
+  description:
+    "Explora los focos de calor VIIRS y MODIS de todo el mundo, consulta estadísticas y genera reportes por fecha y lugar.",
 };
-
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  await connection();
   return (
     <html
-      lang="en"
-      className={`${spaceGrotesk.variable} ${ibmPlexSans.variable} ${ibmPlexMono.variable} h-full antialiased`}
+      lang="es"
+      className={`${display.variable} ${text.variable} ${data.variable}`}
     >
-      <body className="bg-background text-ink min-h-full flex flex-col font-sans">
-        {children}
+      <body>
+        <AppProvider today={boliviaToday()}>
+          <a className="skip-link" href="#contenido">
+            Saltar al contenido
+          </a>
+          <Header />
+          {children}
+        </AppProvider>
       </body>
     </html>
   );

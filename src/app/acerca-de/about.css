@@ -1,0 +1,130 @@
+.about-page {
+  max-width: 1184px;
+  margin: auto;
+  padding: 64px 32px;
+}
+.about-overline {
+  color: var(--color-fuego-texto);
+  margin-bottom: 24px;
+}
+.about-page h1 {
+  margin-bottom: 24px;
+  letter-spacing: -0.025em;
+}
+.about-intro {
+  color: var(--color-tinta-suave);
+  font-size: 16px;
+  line-height: 1.5;
+}
+.about-features {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin: 40px 0;
+}
+.feature-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.feature-card:hover {
+  border-color: var(--color-fuego);
+}
+.feature-card p {
+  font-size: 14px;
+  color: var(--color-tinta-suave);
+}
+.feature-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  background: var(--color-fuego-suave);
+  color: var(--color-fuego-texto);
+  border-radius: 10px;
+}
+.sources-section h2 {
+  margin-bottom: 20px;
+}
+.sources-section .table-scroll {
+  margin-top: 0;
+}
+.sources-table {
+  background: white;
+}
+.sources-table thead {
+  background: var(--color-superficie-2);
+}
+.sources-table th,
+.sources-table td {
+  padding: 16px 20px;
+}
+.sources-section > p {
+  margin-top: 16px;
+  font-size: 14px;
+}
+.about-definitions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin: 40px 0;
+}
+.about-definitions p {
+  margin-top: 12px;
+  font-size: 14px;
+  color: var(--color-tinta-suave);
+}
+.citation {
+  padding: 24px;
+  background: var(--color-superficie-2);
+}
+.citation > .row {
+  margin-top: 20px;
+  justify-content: space-between;
+  gap: 24px;
+}
+.citation p {
+  font-size: 14px;
+}
+.citation .btn {
+  flex: 0 0 auto;
+}
+@media (max-width: 800px) {
+  .about-page {
+    padding: 40px 24px;
+  }
+  .about-features {
+    gap: 16px;
+  }
+  .feature-card {
+    padding: 20px 16px;
+  }
+  .feature-card h4 {
+    font-size: 18px;
+  }
+  .citation > .row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .sources-table td {
+    white-space: normal;
+    min-width: 130px;
+  }
+}
+@media (max-width: 600px) {
+  .about-page {
+    padding: 32px 16px;
+  }
+  .about-features,
+  .about-definitions {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin: 32px 0;
+  }
+  .desktop-break {
+    display: none;
+  }
+  .about-page h1 {
+    font-size: 34px;
+  }
+}

@@ -10,3 +10,7 @@ coverage
 # Local and generated files
 .vercel
 *.tsbuildinfo
+
+# Generated geographic datasets
+src/lib/geo/data/*.json
+src/lib/geo/map-context.json

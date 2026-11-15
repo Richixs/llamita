@@ -9,6 +9,7 @@ on:
       - ".dockerignore"
       - "package.json"
       - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
       - "src/**"
       - "public/**"
       - "next.config.ts"

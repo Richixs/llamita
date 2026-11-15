@@ -1,0 +1,75 @@
+"use client";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useApp } from "./app-provider";
+import { Icon } from "./icon";
+import { Logo } from "./ui/logo";
+export function Header() {
+  const pathname = usePathname();
+  const { loading, error, fetchedAt } = useApp();
+  if (pathname === "/reportes/pdf") return null;
+  return (
+    <header className="site-header">
+      <Link href="/" className="brand" aria-label="Llamita, ir al mapa">
+        <Logo theme="dark" />
+      </Link>
+      <nav className="site-nav" aria-label="Navegación principal">
+        {[
+          ["/", "Mapa"],
+          ["/estadisticas", "Estadísticas"],
+          ["/acerca-de", "Acerca de"],
+        ].map(([href, label]) => (
+          <Link
+            key={href}
+            href={href}
+            aria-current={pathname === href ? "page" : undefined}
+          >
+            {label}
+          </Link>
+        ))}
+      </nav>
+      <div className="header-actions row">
+        <span
+          className="data-status"
+          title={
+            fetchedAt
+              ? `Última consulta: ${new Date(fetchedAt).toLocaleString("es-BO", { timeZone: "America/La_Paz" })}`
+              : "Detecciones de NASA FIRMS"
+          }
+        >
+          <span className="status-dot" />
+          {loading
+            ? "Consultando FIRMS…"
+            : error
+              ? "FIRMS no disponible"
+              : "NASA FIRMS · datos reales"}
+        </span>
+        <Link
+          href="/acerca-de#fuentes"
+          className="icon-btn"
+          aria-label="Ayuda y fuentes de datos"
+        >
+          <Icon name="help" />
+        </Link>
+        <a
+          href="https://github.com/Richixs/llamita"
+          className="icon-btn"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Código fuente en GitHub (se abre en una pestaña nueva)"
+          title="Código fuente en GitHub"
+        >
+          <Icon name="github" />
+        </a>
+        <Link
+          href="/reportes"
+          className="btn btn-primary"
+          aria-current={pathname === "/reportes" ? "page" : undefined}
+        >
+          <Icon name="file" />
+          Generar reporte
+        </Link>
+      </div>
+    </header>
+  );
+}

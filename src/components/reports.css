@@ -1,0 +1,446 @@
+.reports-page {
+  padding-top: 32px;
+}
+.report-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1.8fr) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+.report-form > p {
+  margin-top: 6px;
+}
+.report-form fieldset {
+  padding: 0;
+  margin: 24px 0;
+  border: 0;
+  border-bottom: 1px solid var(--color-borde);
+  padding-bottom: 20px;
+  min-width: 0;
+}
+.report-step legend {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 500;
+  width: 100%;
+  margin-bottom: 4px;
+}
+.report-step legend > span {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--color-carbon);
+  color: var(--color-lana);
+  font: 500 14px var(--font-data);
+  flex: 0 0 auto;
+}
+.step-content {
+  padding-left: 44px;
+}
+.step-content > p {
+  font-size: 14px;
+  color: var(--color-tinta-suave);
+  margin-bottom: 12px;
+}
+.area-types {
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.area-selector {
+  position: relative;
+}
+.area-chips {
+  min-height: 50px;
+  border: 1px solid var(--color-mapa-borde);
+  border-radius: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+}
+.area-chips > .icon-btn {
+  margin-left: auto;
+  width: 24px;
+  height: 24px;
+}
+.selected-area {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  background: var(--color-superficie-2);
+  border-radius: 999px;
+  font-size: 14px;
+}
+.selected-area button {
+  display: flex;
+  padding: 0;
+}
+.selected-area .icon {
+  width: 16px;
+  height: 16px;
+}
+.area-options {
+  position: absolute;
+  z-index: 5;
+  top: calc(100% + 4px);
+  width: 100%;
+  max-height: 280px;
+  overflow: auto;
+  padding: 12px;
+  border: 1px solid var(--color-borde);
+  background: white;
+  box-shadow: 0 8px 16px #241a1620;
+}
+.area-options > label {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 14px;
+  margin-top: 12px;
+  cursor: pointer;
+}
+.area-options input[type="checkbox"],
+.section-checkboxes input {
+  accent-color: var(--color-carbon);
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+}
+.report-mode {
+  max-width: 332px;
+  margin-bottom: 12px;
+}
+.report-shortcuts {
+  gap: 8px;
+  margin-top: 12px;
+}
+.section-checkboxes {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 20px 0 4px;
+}
+.section-checkboxes label {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 14px;
+  cursor: pointer;
+}
+.section-checkboxes .mono {
+  margin-left: auto;
+  font-size: 12px;
+}
+.format-options {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+.format-options button {
+  text-align: left;
+  padding: 12px;
+  border: 1px solid var(--color-borde);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.format-options button > .row {
+  justify-content: space-between;
+  width: 100%;
+}
+.format-options button[aria-pressed="true"] {
+  border: 2px solid var(--color-fuego);
+  padding: 11px;
+  background: var(--color-fuego-suave);
+}
+.format-options button:hover {
+  border-color: var(--color-fuego);
+}
+.format-options button strong {
+  font-size: 14px;
+}
+.format-options button > span:last-child {
+  font-size: 12px;
+  color: var(--color-tinta-suave);
+}
+.format-options button .icon {
+  width: 18px;
+  height: 18px;
+}
+.format-options button .icon:last-child:not(:first-child) {
+  color: var(--color-fuego-texto);
+}
+.report-form .report-step:last-of-type {
+  margin-bottom: 20px;
+}
+.report-submit {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+.report-submit strong {
+  font-size: 14px;
+}
+.report-submit p {
+  margin-top: 4px;
+}
+.report-form .notice {
+  margin-top: 16px;
+}
+.report-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.preview-heading {
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.report-preview {
+  background: var(--color-superficie-2);
+  padding: 20px;
+  border-radius: 8px;
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
+}
+.preview-sheet {
+  width: 270px;
+  height: 382px;
+  position: relative;
+  overflow: hidden;
+}
+.preview-sheet .report-document {
+  width: 796px;
+  transform: scale(0.3392);
+  transform-origin: top left;
+  pointer-events: none;
+}
+.preview-caption {
+  margin-top: 20px;
+}
+.recent-reports > p {
+  margin-top: 6px;
+}
+.recent-report {
+  padding: 20px 0;
+  border-bottom: 1px solid var(--color-borde);
+}
+.recent-report:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+.recent-report-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.report-file {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: var(--color-superficie-2);
+  flex: 0 0 auto;
+}
+.recent-report-title {
+  min-width: 0;
+  flex: 1;
+}
+.recent-report-title strong {
+  font-size: 14px;
+  font-weight: 600;
+  display: block;
+}
+.recent-report-title p {
+  margin-top: 4px;
+}
+.recent-report-main .badge {
+  font-size: 12px;
+  padding: 2px 8px;
+}
+.recent-report-main .btn {
+  min-height: 40px;
+  padding: 8px;
+}
+.recent-error {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 8px;
+  background: var(--color-brasa-suave);
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  font-size: 12px;
+}
+.recent-report progress {
+  width: 100%;
+  accent-color: var(--color-carbon);
+  height: 6px;
+  margin-top: 16px;
+}
+.print-toolbar {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 796px;
+  margin: 0 auto 24px;
+}
+.pdf-workspace {
+  padding: 32px;
+  overflow-x: auto;
+  background: var(--color-superficie-2);
+  min-height: 100dvh;
+}
+@media (min-width: 1500px) {
+  .preview-sheet {
+    width: 318px;
+    height: 450px;
+  }
+  .preview-sheet .report-document {
+    transform: scale(0.4);
+  }
+}
+@media (max-width: 1250px) {
+  .report-columns {
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  }
+  .step-content {
+    padding-left: 0;
+    margin-top: 8px;
+  }
+  .format-options {
+    gap: 8px;
+  }
+  .format-options button {
+    padding: 8px;
+  }
+  .format-options button[aria-pressed="true"] {
+    padding: 7px;
+  }
+  .report-sidebar .panel {
+    padding: 20px;
+  }
+  .recent-report-main {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .recent-report-title {
+    flex-basis: calc(100% - 60px);
+  }
+  .recent-report-main .badge {
+    margin-left: 52px;
+  }
+  .report-submit {
+    flex-wrap: wrap;
+  }
+}
+@media (max-width: 900px) {
+  .report-columns {
+    grid-template-columns: 1fr;
+  }
+  .report-sidebar {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+  .preview-sheet {
+    width: 220px;
+    height: 311px;
+  }
+  .preview-sheet .report-document {
+    transform: scale(0.2764);
+  }
+}
+@media (max-width: 600px) {
+  .report-sidebar {
+    display: flex;
+  }
+  .format-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .format-options button {
+    padding: 12px;
+  }
+  .format-options button[aria-pressed="true"] {
+    padding: 11px;
+  }
+  .report-step legend {
+    font-size: 20px;
+  }
+  .selected-area {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+  .area-types .pill,
+  .report-shortcuts .pill {
+    font-size: 12px;
+  }
+  .report-submit {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .report-submit .btn {
+    width: 100%;
+  }
+  .section-checkboxes label {
+    font-size: 13px;
+  }
+  .preview-sheet {
+    width: 270px;
+    height: 382px;
+  }
+  .preview-sheet .report-document {
+    transform: scale(0.3392);
+  }
+  .print-toolbar {
+    width: 796px;
+  }
+}
+
+.format-code {
+  max-height: 420px;
+  overflow: auto;
+  padding: 16px;
+  border: 1px solid var(--color-borde);
+  background: var(--color-fondo);
+  font: 12px/1.7 var(--font-data);
+  white-space: pre;
+  margin-block: 12px;
+}
+.format-table {
+  max-height: 400px;
+  overflow: auto;
+  margin-block: 12px;
+}
+.format-map {
+  width: 100%;
+  height: auto;
+  margin-block: 12px;
+  border: 1px solid var(--color-borde);
+}
+.preview-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-block: 16px;
+}
+.pdf-page > .ranking-chart {
+  margin-block: 16px 24px;
+}
+.pdf-page > .ranking-chart .ranking-row {
+  font-size: 12px;
+  min-height: 26px;
+}

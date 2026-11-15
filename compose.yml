@@ -17,8 +17,9 @@ services:
       - NODE_ENV=production
       - PORT=3000
       - HOSTNAME=0.0.0.0
+      - REDIS_URL=redis://redis:6379
     env_file:
-      - path: .env.local
+      - path: .env
         required: false
     restart: unless-stopped
     healthcheck:
@@ -54,10 +55,30 @@ services:
     environment:
       - NODE_ENV=development
       - WATCHPACK_POLLING=true
+      - REDIS_URL=redis://redis:6379
     env_file:
-      - path: .env.local
+      - path: .env
         required: false
     volumes:
       - .:/app
       - /app/node_modules
       - /app/.next
+
+  redis:
+    image: redis:8-alpine
+    ports:
+      - "127.0.0.1:6379:6379"
+    command:
+      [
+        "redis-server",
+        "--maxmemory",
+        "256mb",
+        "--maxmemory-policy",
+        "allkeys-lru",
+      ]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    restart: unless-stopped
