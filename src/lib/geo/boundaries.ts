@@ -38,3 +38,15 @@ export function listProvinces(): string[] {
 export function listMunicipalities(): string[] {
   return municipios.features.map((f) => f.properties.name).sort();
 }
+
+export type BoundaryType = "province" | "municipality";
+
+export type NamedBoundaryFeature = GeoJSON.Feature<
+  GeoJSON.Polygon | GeoJSON.MultiPolygon,
+  { name: string }
+>;
+
+export function getBoundary(type: BoundaryType, name: string): NamedBoundaryFeature | undefined {
+  const collection = type === "province" ? provincias : municipios;
+  return collection.features.find((f) => f.properties.name === name);
+}
