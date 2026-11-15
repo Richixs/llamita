@@ -4,6 +4,7 @@ import { parseAreaCoordinates, parseDateParam } from "./validation";
 import type { FirmsHotspot, FirmsSource } from "./types";
 import type { Detection } from "@/lib/llamita/data";
 import { MAX_QUERY_DAYS, type Bbox } from "@/lib/geo/catalog";
+import { findMunicipality, findProvince } from "@/lib/geo/boundaries";
 const DAY = 86400000;
 export interface HotspotQuery {
   from: string;
@@ -77,8 +78,8 @@ export function toDetection(row: FirmsHotspot, source: FirmsSource): Detection {
     id: `firms-${source}-${row.acq_date}-${time}-${row.latitude}-${row.longitude}-${row.satellite}`,
     origin: "live",
     source,
-    municipality: "Sin asignar",
-    province: "Sin asignar",
+    municipality: findMunicipality(row.latitude, row.longitude),
+    province: findProvince(row.latitude, row.longitude),
     date: local.slice(0, 10),
     time: local.slice(11, 16),
     frp: row.frp,
