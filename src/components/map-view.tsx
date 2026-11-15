@@ -1,5 +1,6 @@
 "use client";
 import Image from "next/image";
+import { DataModeControl } from "./data-mode-control";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useApp } from "./app-provider";
@@ -103,6 +104,7 @@ export function MapView({ initialFocus = "" }: { initialFocus?: string }) {
             Limpiar todo
           </button>
         </div>
+        <DataModeControl />
         <section className="filter-group">
           <h2 className="overline">Fecha</h2>
           <div className="segmented">

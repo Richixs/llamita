@@ -2,9 +2,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useApp } from "./app-provider";
 import { Icon } from "./icon";
 export function Header() {
   const pathname = usePathname();
+  const { mode, loading, error, fetchedAt } = useApp();
   if (pathname === "/reportes/pdf") return null;
   return (
     <header className="site-header">
@@ -35,10 +37,22 @@ export function Header() {
       <div className="header-actions row">
         <span
           className="data-status"
-          title="Las cifras corresponden a las vistas de referencia, no a detecciones en tiempo real."
+          title={
+            mode === "demo"
+              ? "Datos ilustrativos del diseño"
+              : fetchedAt
+                ? `Última consulta: ${new Date(fetchedAt).toLocaleString("es-BO", { timeZone: "America/La_Paz" })}`
+                : "Detecciones de NASA FIRMS"
+          }
         >
           <span className="status-dot" />
-          Datos de ejemplo · nov 2026
+          {mode === "demo"
+            ? "Datos de ejemplo · nov 2026"
+            : loading
+              ? "Consultando FIRMS…"
+              : error
+                ? "FIRMS no disponible"
+                : "NASA FIRMS · datos reales"}
         </span>
         <Link
           href="/acerca-de#fuentes"

@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
+import { boliviaToday } from "@/lib/geo/catalog";
 import localFont from "next/font/local";
 import { AppProvider } from "@/components/app-provider";
 import { Header } from "@/components/header";
 import "./globals.css";
+import "@/components/live-map.css";
 
 const display = localFont({
   src: [
@@ -38,18 +41,19 @@ export const metadata: Metadata = {
   description:
     "Explora los focos de calor de Cochabamba, consulta estadísticas y genera reportes por fecha y lugar.",
 };
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  await connection();
   return (
     <html
       lang="es"
       className={`${display.variable} ${text.variable} ${data.variable}`}
     >
       <body>
-        <AppProvider>
+        <AppProvider today={boliviaToday()}>
           <a className="skip-link" href="#contenido">
             Saltar al contenido
           </a>
