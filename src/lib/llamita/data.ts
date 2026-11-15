@@ -66,6 +66,8 @@ export const provinces = [
 export const territories = ["TIPNIS", "Yuracaré", "Yuqui"];
 export const protectedAreas = ["PN Carrasco", "TIPNIS"];
 export interface Detection {
+  origin?: "live" | "demo";
+  source?: string;
   id: string;
   municipality: string;
   province: string;

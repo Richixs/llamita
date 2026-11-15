@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { boliviaToday } from "@/lib/geo/catalog";
+import { dateLabel } from "@/lib/llamita/filters";
 import { Icon, type IconName } from "@/components/icon";
 import { CopyCitation } from "@/components/copy-citation";
 import "@/components/statistics.css";
 import "./about.css";
 export const metadata: Metadata = { title: "Acerca de y fuentes" };
-const citation =
-  "Fuente: Llamita, con datos de NASA FIRMS (VIIRS y MODIS). Consultado el 14 nov 2026.";
 export default function AboutPage() {
+  const citation = `Fuente: Llamita, con datos de NASA FIRMS (VIIRS y MODIS) y capas municipales GAMC. Consultado el ${dateLabel(boliviaToday())}.`;
   const features: {
     icon: IconName;
     title: string;
@@ -25,7 +26,7 @@ export default function AboutPage() {
       icon: "filter",
       title: "Filtrar por fecha y lugar",
       description:
-        "Elige un día o un rango, y busca por provincia, municipio, TCO o área protegida.",
+        "Consulta por fecha, rectángulo geográfico y sensor. Los filtros territoriales requieren límites vectoriales oficiales.",
       href: "/",
     },
     {
@@ -41,8 +42,8 @@ export default function AboutPage() {
       <p className="overline about-overline">Acerca de Llamita</p>
       <h1>Vigilar el fuego en Cochabamba, a tiempo</h1>
       <p className="about-intro">
-        Llamita muestra los focos de calor que detectan los satélites sobre los
-        47 municipios de Cochabamba,
+        Llamita reúne detecciones satelitales de FIRMS y las capas municipales
+        autorizadas por GAMC en el área de Cochabamba,
         <br className="desktop-break" /> para que brigadas, gobiernos
         municipales y comunidades puedan actuar antes de que un incendio crezca.
       </p>
@@ -83,10 +84,10 @@ export default function AboutPage() {
                 <td>Serie histórica larga para comparar años.</td>
               </tr>
               <tr>
-                <th>Límites</th>
-                <td>Departamento y 47 municipios</td>
+                <th>GAMC</th>
+                <td>Periurbanos, Cota 2750 y Límite Distritos</td>
                 <td>—</td>
-                <td>Filtrar y agrupar por municipio y provincia.</td>
+                <td>Mapas, leyendas y atributos puntuales en su cobertura.</td>
               </tr>
             </tbody>
           </table>
@@ -105,9 +106,11 @@ export default function AboutPage() {
           de 3 horas). Las horas se muestran en hora de Bolivia (UTC−4).
         </p>
         <p className="notice demo-disclosure">
-          Esta versión muestra datos de ejemplo del 1 al 14 de noviembre de
-          2026. Los límites, las capas y las coordenadas son ilustrativos; no
-          representan información operativa en tiempo real.
+          El modo real consulta FIRMS por rectángulo geográfico y muestra las
+          tres capas GAMC autorizadas. Los límites de los 47 municipios, TCO y
+          áreas protegidas aún no están disponibles para asignar o agrupar
+          detecciones. El modo de ejemplo utiliza datos ilustrativos de
+          noviembre de 2026 y está separado de las consultas reales.
         </p>
       </section>
       <div className="about-definitions">

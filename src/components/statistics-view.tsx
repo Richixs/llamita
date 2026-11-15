@@ -1,21 +1,17 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
+import { DataModeControl, DataNotice } from "./data-mode-control";
 import { useApp } from "./app-provider";
 import { Icon } from "./icon";
 import { DailyChart, Metrics, RankingChart } from "./charts";
-import {
-  byDay,
-  filterDetections,
-  ranking,
-  type Detection,
-} from "@/lib/llamita/data";
+import { byDay, ranking, type Detection } from "@/lib/llamita/data";
 import { dateLabel, number, periodLabel } from "@/lib/llamita/filters";
 import "./statistics.css";
 export function StatisticsView() {
-  const { filters, updateFilters } = useApp();
+  const { filters, updateFilters, data, mode, loading, error } = useApp();
+  const isLive = mode === "live";
   const [page, setPage] = useState(0);
-  const data = filterDetections(filters);
   const from = filters.mode === "day" ? filters.to : filters.from;
   const days = byDay(data, from, filters.to);
   const peak = days.toSorted((a, b) => b.count - a.count)[0];
@@ -39,8 +35,8 @@ export function StatisticsView() {
       mode: "day",
       to: d.date,
       from: d.date,
-      municipality: d.municipality,
-      province: d.province,
+      municipality: isLive ? "" : d.municipality,
+      province: isLive ? "" : d.province,
     });
   }
   return (
@@ -49,8 +45,10 @@ export function StatisticsView() {
         <div>
           <h1>Estadísticas de focos de calor</h1>
           <p>
-            {filters.municipality || filters.province || "Cochabamba"} ·{" "}
-            {periodLabel(filters)}
+            {isLive
+              ? "Área consultada"
+              : filters.municipality || filters.province || "Cochabamba"}{" "}
+            · {periodLabel(filters)}
           </p>
         </div>
         <button className="btn" onClick={csv} disabled={!data.length}>
@@ -58,26 +56,34 @@ export function StatisticsView() {
           Descargar CSV
         </button>
       </div>
+      <DataModeControl />
+      <DataNotice />
       {downloadError && (
         <p role="alert" className="notice error-notice">
           {downloadError}
         </p>
       )}
       <div className="stats-period row wrap">
-        <span className="text-caption muted">Datos de ejemplo del diseño</span>
-        <button
-          className="text-link"
-          onClick={() => {
-            updateFilters({
-              mode: "range",
-              from: "2026-11-01",
-              to: "2026-11-14",
-            });
-            setPage(0);
-          }}
-        >
-          Ver periodo del 1 al 14 nov
-        </button>
+        <span className="text-caption muted">
+          {isLive
+            ? "NASA FIRMS · detecciones reales"
+            : "Datos de ejemplo del diseño"}
+        </span>
+        {!isLive && (
+          <button
+            className="text-link"
+            onClick={() => {
+              updateFilters({
+                mode: "range",
+                from: "2026-11-01",
+                to: "2026-11-14",
+              });
+              setPage(0);
+            }}
+          >
+            Ver periodo del 1 al 14 nov
+          </button>
+        )}
         <Link href="/" className="text-link">
           Cambiar filtros en el mapa
         </Link>
@@ -86,20 +92,24 @@ export function StatisticsView() {
         values={[
           {
             label: "Focos detectados",
-            value: number(data.length),
+            value: loading || error ? "—" : number(data.length),
             description: "Detecciones del periodo seleccionado",
           },
           {
             label: "Municipios afectados",
-            value: `${municipal.length} de 47`,
-            description: municipal[0]
-              ? `${municipal[0].name} concentra el ${Math.round((municipal[0].count / data.length) * 100)} %`
-              : "Sin municipios afectados",
+            value: isLive ? "—" : `${municipal.length} de 47`,
+            description: isLive
+              ? "Requiere límites vectoriales oficiales"
+              : municipal[0]
+                ? `${municipal[0].name} concentra el ${Math.round((municipal[0].count / data.length) * 100)} %`
+                : "Sin municipios afectados",
           },
           {
             label: "En áreas protegidas",
-            value: number(protectedCount),
-            description: `${data.length ? Math.round((protectedCount / data.length) * 100) : 0} % del total · ${areas.filter((a) => a.name !== "Fuera de áreas").length} áreas`,
+            value: isLive ? "—" : number(protectedCount),
+            description: isLive
+              ? "Fuente territorial pendiente"
+              : `${data.length ? Math.round((protectedCount / data.length) * 100) : 0} % del total · ${areas.filter((a) => a.name !== "Fuera de áreas").length} áreas`,
           },
           {
             label: "Día con más focos",
@@ -113,7 +123,13 @@ export function StatisticsView() {
       {!data.length ? (
         <section className="panel stats-empty">
           <Icon name="search" />
-          <h3>No hay detecciones para este periodo</h3>
+          <h3>
+            {loading
+              ? "Consultando detecciones…"
+              : error
+                ? "No se pudo completar la consulta"
+                : "No hay detecciones para este periodo"}
+          </h3>
           <p className="muted">
             Cambia los filtros en el mapa para explorar otras fechas o lugares.
           </p>
@@ -134,44 +150,46 @@ export function StatisticsView() {
               marca en naranja
             </p>
           </section>
-          <div className="stats-comparison">
-            <section className="panel">
-              <h4>Municipios con más focos</h4>
-              <p className="muted text-body-sm">
-                Top 10 de {municipal.length} municipios con focos
-              </p>
-              <RankingChart
-                values={[
-                  ...municipal.slice(0, 10),
-                  ...(municipal.length > 10
-                    ? [
-                        {
-                          name: `Otros ${municipal.length - 10} municipios`,
-                          count: municipal
-                            .slice(10)
-                            .reduce((s, v) => s + v.count, 0),
-                        },
-                      ]
-                    : []),
-                ]}
-                highlight
-              />
-            </section>
-            <section className="panel">
-              <h4>Por provincia</h4>
-              <p className="muted text-body-sm">
-                Provincias con al menos un foco
-              </p>
-              <RankingChart values={ranking(data, "province")} highlight />
-              <div className="areas-ranking">
-                <h4>Áreas protegidas</h4>
+          {!isLive && (
+            <div className="stats-comparison">
+              <section className="panel">
+                <h4>Municipios con más focos</h4>
                 <p className="muted text-body-sm">
-                  Focos dentro de áreas protegidas nacionales
+                  Top 10 de {municipal.length} municipios con focos
                 </p>
-                <RankingChart values={areas} />
-              </div>
-            </section>
-          </div>
+                <RankingChart
+                  values={[
+                    ...municipal.slice(0, 10),
+                    ...(municipal.length > 10
+                      ? [
+                          {
+                            name: `Otros ${municipal.length - 10} municipios`,
+                            count: municipal
+                              .slice(10)
+                              .reduce((s, v) => s + v.count, 0),
+                          },
+                        ]
+                      : []),
+                  ]}
+                  highlight
+                />
+              </section>
+              <section className="panel">
+                <h4>Por provincia</h4>
+                <p className="muted text-body-sm">
+                  Provincias con al menos un foco
+                </p>
+                <RankingChart values={ranking(data, "province")} highlight />
+                <div className="areas-ranking">
+                  <h4>Áreas protegidas</h4>
+                  <p className="muted text-body-sm">
+                    Focos dentro de áreas protegidas nacionales
+                  </p>
+                  <RankingChart values={areas} />
+                </div>
+              </section>
+            </div>
+          )}
           <section className="panel detections-panel">
             <h4>Detecciones del periodo</h4>
             <p className="muted text-body-sm">

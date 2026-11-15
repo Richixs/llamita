@@ -17,7 +17,7 @@ export function parseSource(value: string | null): FirmsSource {
 export function parseAvailabilitySensor(
   value: string | null,
 ): FirmsAvailabilitySensor {
-  if (!value || value === "all") {
+  if (!value || value.toLowerCase() === "all") {
     return "all";
   }
   return parseSource(value);
@@ -35,7 +35,7 @@ export function parseAreaCoordinates(value: string | null): string {
   }
 
   const parts = value.split(",").map((part) => part.trim());
-  if (parts.length !== 4) {
+  if (parts.length !== 4 || parts.some((part) => !part)) {
     throw new FirmsValidationError(
       '"bbox" must have 4 values: west,south,east,north',
     );
@@ -78,7 +78,11 @@ export function parseDateParam(value: string | null): string | undefined {
   if (!value) {
     return undefined;
   }
-  if (!DATE_PATTERN.test(value)) {
+  if (
+    !DATE_PATTERN.test(value) ||
+    !Number.isFinite(Date.parse(value)) ||
+    new Date(value).toISOString().slice(0, 10) !== value
+  ) {
     throw new FirmsValidationError('"date" must use the YYYY-MM-DD format');
   }
   return value;

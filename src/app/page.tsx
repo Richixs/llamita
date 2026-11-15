@@ -1,9 +1,9 @@
-import { MapView } from "@/components/map-view";
+import { MapScreen } from "@/components/map-screen";
 export default async function Home({
   searchParams,
 }: {
   searchParams: Promise<{ foco?: string }>;
 }) {
   const { foco } = await searchParams;
-  return <MapView key={foco || "map"} initialFocus={foco} />;
+  return <MapScreen key={foco || "map"} initialFocus={foco} />;
 }
