@@ -105,12 +105,11 @@ export default function AboutPage() {
           y se actualizan después de cada paso de satélite (normalmente en menos
           de 3 horas). Las horas se muestran en hora de Bolivia (UTC−4).
         </p>
-        <p className="notice demo-disclosure">
-          El modo real consulta FIRMS por rectángulo geográfico y muestra las
-          tres capas GAMC autorizadas. Los límites de los 47 municipios, TCO y
-          áreas protegidas aún no están disponibles para asignar o agrupar
-          detecciones. El modo de ejemplo utiliza datos ilustrativos de
-          noviembre de 2026 y está separado de las consultas reales.
+        <p className="notice">
+          Llamita consulta FIRMS por rectángulo geográfico y muestra las tres
+          capas GAMC autorizadas. Los límites de los 47 municipios, TCO y áreas
+          protegidas aún no están disponibles para asignar o agrupar
+          detecciones.
         </p>
       </section>
       <div className="about-definitions">

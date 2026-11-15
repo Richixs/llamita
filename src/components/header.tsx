@@ -6,7 +6,7 @@ import { Icon } from "./icon";
 import { Logo } from "./ui/logo";
 export function Header() {
   const pathname = usePathname();
-  const { mode, loading, error, fetchedAt } = useApp();
+  const { loading, error, fetchedAt } = useApp();
   if (pathname === "/reportes/pdf") return null;
   return (
     <header className="site-header">
@@ -32,21 +32,17 @@ export function Header() {
         <span
           className="data-status"
           title={
-            mode === "demo"
-              ? "Datos ilustrativos del diseño"
-              : fetchedAt
-                ? `Última consulta: ${new Date(fetchedAt).toLocaleString("es-BO", { timeZone: "America/La_Paz" })}`
-                : "Detecciones de NASA FIRMS"
+            fetchedAt
+              ? `Última consulta: ${new Date(fetchedAt).toLocaleString("es-BO", { timeZone: "America/La_Paz" })}`
+              : "Detecciones de NASA FIRMS"
           }
         >
           <span className="status-dot" />
-          {mode === "demo"
-            ? "Datos de ejemplo · nov 2026"
-            : loading
-              ? "Consultando FIRMS…"
-              : error
-                ? "FIRMS no disponible"
-                : "NASA FIRMS · datos reales"}
+          {loading
+            ? "Consultando FIRMS…"
+            : error
+              ? "FIRMS no disponible"
+              : "NASA FIRMS · datos reales"}
         </span>
         <Link
           href="/acerca-de#fuentes"

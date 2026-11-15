@@ -2,7 +2,6 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useApp } from "./app-provider";
-import { DataModeControl } from "./data-mode-control";
 import { useLiveDetections, fetchLiveDetections } from "./use-live-detections";
 import { ReportDocument } from "./report-document";
 import { Icon, type IconName } from "./icon";
@@ -63,7 +62,7 @@ export function LiveReportBuilder() {
   function persist(next: SavedReport[]) {
     setReports(next);
     try {
-      storeReports(next, "live");
+      storeReports(next);
     } catch {
       setStorageNote(
         "No se pudo guardar el historial. La descarga sigue disponible.",
@@ -150,7 +149,6 @@ export function LiveReportBuilder() {
           </p>
         </div>
       </div>
-      <DataModeControl />
       <div className="report-columns">
         <section className="panel report-form">
           <h3>Nuevo reporte</h3>

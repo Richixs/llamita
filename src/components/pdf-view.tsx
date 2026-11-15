@@ -6,11 +6,9 @@ import { useLiveDetections } from "./use-live-detections";
 import { Icon } from "./icon";
 import { ReportDocument } from "./report-document";
 import {
-  defaultReport,
   isReportConfig,
   DRAFT_STORAGE_KEY,
   liveConfig,
-  reportData,
   type ReportConfig,
 } from "@/lib/llamita/report";
 import { GAMC_BBOX } from "@/lib/geo/catalog";
@@ -19,9 +17,9 @@ import "./statistics.css";
 import "./map.css";
 import "./reports.css";
 export function PdfView() {
-  const { filters, bbox, mode, today } = useApp();
+  const { filters, bbox, today } = useApp();
   const [config, setConfig] = useState<ReportConfig>(() =>
-    mode === "live" ? liveConfig(filters, bbox) : defaultReport,
+    liveConfig(filters, bbox),
   );
   useEffect(() => {
     function load() {
@@ -32,7 +30,7 @@ export function PdfView() {
           if (isReportConfig(parsed)) setConfig(parsed);
         }
       } catch {
-        /* Keep the current mode's defaults. */
+        /* Keep the current FIRMS query defaults. */
       }
     }
     load();
@@ -42,9 +40,8 @@ export function PdfView() {
     to: config.to,
     sensor: config.satellite,
     bbox: config.bbox || GAMC_BBOX,
-    enabled: config.origin === "live",
   });
-  const data = config.origin === "live" ? live.data : reportData(config);
+  const data = live.data;
   return (
     <main id="contenido" className="pdf-workspace">
       <div className="print-toolbar">
@@ -74,7 +71,7 @@ export function PdfView() {
       <ReportDocument
         config={{
           ...config,
-          warnings: config.origin === "live" ? live.warnings : config.warnings,
+          warnings: live.warnings,
         }}
         data={data}
         generatedAt={dateLabel(today)}

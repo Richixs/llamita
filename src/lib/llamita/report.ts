@@ -1,4 +1,4 @@
-import { detections, filterDetections, type Detection } from "./data";
+import { filterDetections, type Detection } from "./data";
 import { GAMC_BBOX, type Bbox } from "@/lib/geo/catalog";
 import { initialFilters, periodError, type Filters } from "./filters";
 export type ReportFormat = "PDF" | "Excel" | "CSV" | "Shapefile" | "GeoJSON";
@@ -15,7 +15,7 @@ export const sectionLabels: Record<ReportSection, string> = {
 export type AreaType =
   "all" | "province" | "municipality" | "territory" | "protectedArea";
 export interface ReportConfig {
-  origin?: "live" | "demo";
+  origin: "live";
   bbox?: Bbox;
   warnings?: string[];
   areaType: AreaType;
@@ -38,19 +38,19 @@ export interface SavedReport {
   size?: number;
 }
 export const defaultReport: ReportConfig = {
-  origin: "demo",
-  areaType: "municipality",
-  areas: ["Villa Tunari", "Chimoré", "Puerto Villarroel", "Shinahota"],
+  origin: "live",
+  areaType: "all",
+  areas: [],
   mode: "range",
-  from: "2026-11-01",
-  to: "2026-11-14",
+  from: "",
+  to: "",
   sections: ["summary", "map", "daily", "ranking", "protected"],
   format: "PDF",
   satellite: "all",
 };
 export function reportData(
   config: ReportConfig,
-  source: Detection[] = detections,
+  source: Detection[],
 ): Detection[] {
   const data = filterDetections(
     {
@@ -67,10 +67,7 @@ export function reportData(
   const key = config.areaType;
   return data.filter((d) => config.areas.includes(d[key]));
 }
-export function validateReport(
-  config: ReportConfig,
-  source: Detection[] = detections,
-) {
+export function validateReport(config: ReportConfig, source: Detection[]) {
   const error = periodError(
     config.mode === "day" ? config.to : config.from,
     config.to,
@@ -81,9 +78,7 @@ export function validateReport(
   if (config.format === "PDF" && !config.sections.length)
     return "Selecciona al menos una sección para el PDF.";
   if (!reportData(config, source).length)
-    return config.origin === "live"
-      ? "No hay detecciones para el área y periodo elegidos."
-      : "No hay focos con esta selección. Los datos de ejemplo abarcan del 1 al 14 de noviembre de 2026.";
+    return "No hay detecciones para el área y periodo elegidos.";
   return "";
 }
 export function configFromFilters(filters: Filters): ReportConfig {
@@ -114,7 +109,7 @@ export function isReportConfig(value: unknown): value is ReportConfig {
   if (!value || typeof value !== "object") return false;
   const c = value as ReportConfig;
   return (
-    (c.origin === undefined || ["live", "demo"].includes(c.origin)) &&
+    c.origin === "live" &&
     (!c.bbox ||
       (Array.isArray(c.bbox) &&
         c.bbox.length === 4 &&
@@ -175,28 +170,7 @@ export function readSavedReports(raw: string | null): SavedReport[] {
     return [];
   }
 }
-export function exampleReports(): SavedReport[] {
-  return [
-    {
-      id: "example-tropico",
-      name: "Trópico · 1–14 nov 2026",
-      createdAt: new Date().toISOString(),
-      status: "ready",
-      config: { ...defaultReport },
-    },
-    {
-      id: "example-cochabamba",
-      name: "Todo Cochabamba · noviembre 2026",
-      createdAt: new Date().toISOString(),
-      status: "ready",
-      config: { ...defaultReport, areaType: "all", areas: [], format: "CSV" },
-    },
-  ];
-}
-export function reportPages(
-  config: ReportConfig,
-  data: Detection[] = detections,
-) {
+export function reportPages(config: ReportConfig, data: Detection[]) {
   return (
     1 +
     (config.origin === "live"
@@ -221,16 +195,9 @@ export function liveConfig(
     sections: ["summary", "map", "daily"],
   };
 }
-export function storeReports(reports: SavedReport[], origin: "live" | "demo") {
-  const others = readSavedReports(
-    localStorage.getItem(REPORT_STORAGE_KEY),
-  ).filter((r) => (r.config.origin || "demo") !== origin);
+export function storeReports(reports: SavedReport[]) {
   localStorage.setItem(
     REPORT_STORAGE_KEY,
-    JSON.stringify(
-      [...reports, ...others]
-        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-        .slice(0, 20),
-    ),
+    JSON.stringify(reports.slice(0, 20)),
   );
 }

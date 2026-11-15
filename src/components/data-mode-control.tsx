@@ -1,31 +1,7 @@
 "use client";
 import { useApp } from "./app-provider";
-export function DataModeControl() {
-  const { mode, setMode } = useApp();
-  return (
-    <div
-      className="segmented data-mode"
-      role="group"
-      aria-label="Origen de los datos"
-    >
-      <button aria-pressed={mode === "live"} onClick={() => setMode("live")}>
-        Datos reales
-      </button>
-      <button aria-pressed={mode === "demo"} onClick={() => setMode("demo")}>
-        Ejemplo
-      </button>
-    </div>
-  );
-}
 export function DataNotice() {
-  const { mode, loading, error, warnings, reload } = useApp();
-  if (mode === "demo")
-    return (
-      <p className="notice">
-        Datos de ejemplo · noviembre de 2026. Las ubicaciones y capas de este
-        modo son ilustrativas.
-      </p>
-    );
+  const { loading, error, warnings, reload } = useApp();
   return (
     <div className="data-notices">
       {loading && (

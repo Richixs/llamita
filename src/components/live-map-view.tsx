@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useApp } from "./app-provider";
-import { DataModeControl, DataNotice } from "./data-mode-control";
+import { DataNotice } from "./data-mode-control";
 import { Icon } from "./icon";
 import {
   GAMC_BBOX,
@@ -37,7 +37,6 @@ export function LiveMapView({ initialFocus = "" }: { initialFocus?: string }) {
     filters,
     updateFilters,
     resetFilters,
-    mode,
     data,
     loading,
     error,
@@ -140,7 +139,6 @@ export function LiveMapView({ initialFocus = "" }: { initialFocus?: string }) {
             Limpiar todo
           </button>
         </div>
-        <DataModeControl />
         <section className="filter-group">
           <h2 className="overline">Fecha · hora de Bolivia</h2>
           <div className="segmented">
@@ -205,7 +203,7 @@ export function LiveMapView({ initialFocus = "" }: { initialFocus?: string }) {
             Hasta {MAX_QUERY_DAYS} días por consulta. La disponibilidad depende
             del producto de NASA.
           </p>
-          {mode === "live" && rangeDays > 60 && (
+          {rangeDays > 60 && (
             <p className="text-caption muted" role="status">
               Rango amplio ({number(rangeDays)} días): la consulta puede tardar
               varios segundos.
