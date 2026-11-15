@@ -1,3 +1,6 @@
+import { createHash } from "node:crypto";
+import { createQueryCache } from "@/lib/cache/query-cache";
+import { redisStore } from "@/lib/cache/redis";
 import { getAreaHotspots, getDataAvailability } from "./client";
 import { FirmsUpstreamError, FirmsValidationError } from "./errors";
 import { parseAreaCoordinates, parseDateParam } from "./validation";
@@ -273,24 +276,8 @@ async function fetchHotspots(query: HotspotQuery): Promise<HotspotResult> {
   };
 }
 
-const cache = new Map<
-  string,
-  { expires: number; promise: Promise<HotspotResult> }
->();
+const cached = createQueryCache<HotspotResult>({ store: redisStore, ttl: 300 });
 export function queryHotspots(query: HotspotQuery): Promise<HotspotResult> {
-  const key = JSON.stringify(query),
-    existing = cache.get(key);
-  if (existing && existing.expires > Date.now()) return existing.promise;
-  const promise: Promise<HotspotResult> = fetchHotspots(query).catch(
-    (error) => {
-      if (cache.get(key)?.promise === promise) cache.delete(key);
-      throw error;
-    },
-  );
-  cache.set(key, { expires: Date.now() + 5 * 60 * 1000, promise });
-  while (cache.size > 8) {
-    const first = cache.keys().next().value;
-    if (first !== undefined) cache.delete(first);
-  }
-  return promise;
+  const key = `llamita:firms:v3:${createHash("sha256").update(JSON.stringify(query)).digest("hex")}`;
+  return cached(key, () => fetchHotspots(query));
 }

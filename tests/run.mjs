@@ -5,3 +5,4 @@ import "./grid.test.ts";
 import "./exports.test.ts";
 
 import "./global.test.ts";
+import "./cache.test.ts";

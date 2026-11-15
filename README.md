@@ -1,36 +1,32 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Llamita
 
-## Getting Started
+Mapa mundial de focos de calor VIIRS y MODIS de NASA FIRMS, filtros por continente y país, estadísticas e informes. Cochabamba conserva los filtros municipales y las capas GAMC como reto local.
 
-First, run the development server:
+## Desarrollo
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+corepack pnpm install --frozen-lockfile
+cp .env.example .env
+# Completar FIRMS_MAP_KEY y, para las capas del reto local, GAMC_API_KEY.
+docker compose up -d redis
+corepack pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+`REDIS_URL=redis://127.0.0.1:6379` activa la caché compartida. En un alojamiento externo, configura la URL del servicio Redis (`redis://` o `rediss://`) únicamente en el servidor. No se expone al navegador. Redis es opcional: si falta o falla, se utiliza caché local acotada. Las consultas se almacenan comprimidas durante cinco minutos; no se guardan claves FIRMS en Redis. Los errores de NASA no se cachean. Las consultas simultáneas idénticas en una instancia comparten la misma petición.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Cobertura e histórico
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+La [API de área de FIRMS](https://firms.modaps.eosdis.nasa.gov/api/area) admite un rectángulo o `world`. El histórico puede seleccionarse desde 2000 hasta la fecha actual, incluidos periodos de varios años. Se combina el archivo SP con los productos NRT según la disponibilidad publicada por NASA; VIIRS no tiene observaciones en los primeros años de MODIS. Los periodos se dividen en bloques para respetar el límite de cinco días de cada petición a NASA. Las consultas de cobertura amplia se procesan en bloques de cinco días; las regionales agrupan hasta un año por respuesta.
 
-## Learn More
+Un histórico mundial de muchos años puede requerir numerosas consultas y una sesión prolongada. La cuota de la MAP_KEY y la disponibilidad de NASA siguen aplicándose. Un resultado vacío o con avisos no demuestra ausencia de incendios. Las horas se presentan en UTC−4 para conservar una referencia uniforme.
 
-To learn more about Next.js, take a look at the following resources:
+Los países y continentes se filtran por los polígonos de Natural Earth, no únicamente por su rectángulo. Los límites generalizados pueden dejar costas e islas pequeñas sin asignar. Ver [fuentes geográficas](src/lib/geo/data/README.md).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Comprobaciones
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+corepack pnpm test
+corepack pnpm exec tsc --noEmit
+corepack pnpm lint
+corepack pnpm build
+```
