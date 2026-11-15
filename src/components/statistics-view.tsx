@@ -1,7 +1,8 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { DataModeControl, DataNotice } from "./data-mode-control";
+import { scopeLabel } from "@/lib/geo/scope";
+import { DataNotice } from "./data-mode-control";
 import { useApp } from "./app-provider";
 import { Icon } from "./icon";
 import { DailyChart, Metrics, RankingChart } from "./charts";
@@ -9,15 +10,13 @@ import { byDay, ranking, type Detection } from "@/lib/llamita/data";
 import { dateLabel, number, periodLabel } from "@/lib/llamita/filters";
 import "./statistics.css";
 export function StatisticsView() {
-  const { filters, updateFilters, data, mode, loading, error } = useApp();
-  const isLive = mode === "live";
+  const { filters, updateFilters, data, loading, error } = useApp();
   const [page, setPage] = useState(0);
   const from = filters.mode === "day" ? filters.to : filters.from;
   const days = byDay(data, from, filters.to);
   const peak = days.toSorted((a, b) => b.count - a.count)[0];
   const municipal = ranking(data, "municipality");
-  const areas = ranking(data, "protectedArea");
-  const protectedCount = data.filter((d) => d.protectedArea).length;
+  const countries = ranking(data, "country");
   const pageCount = Math.ceil(data.length / 6);
   const currentPage = Math.min(page, Math.max(0, pageCount - 1));
   const start = currentPage * 6;
@@ -35,8 +34,8 @@ export function StatisticsView() {
       mode: "day",
       to: d.date,
       from: d.date,
-      municipality: isLive ? "" : d.municipality,
-      province: isLive ? "" : d.province,
+      municipality: "",
+      province: "",
     });
   }
   return (
@@ -45,9 +44,10 @@ export function StatisticsView() {
         <div>
           <h1>Estadísticas de focos de calor</h1>
           <p>
-            {isLive
-              ? "Área consultada"
-              : filters.municipality || filters.province || "Cochabamba"}{" "}
+            {scopeLabel({
+              ...filters,
+              areas: [filters.municipality || filters.province].filter(Boolean),
+            })}{" "}
             · {periodLabel(filters)}
           </p>
         </div>
@@ -56,7 +56,6 @@ export function StatisticsView() {
           Descargar CSV
         </button>
       </div>
-      <DataModeControl />
       <DataNotice />
       {downloadError && (
         <p role="alert" className="notice error-notice">
@@ -65,25 +64,8 @@ export function StatisticsView() {
       )}
       <div className="stats-period row wrap">
         <span className="text-caption muted">
-          {isLive
-            ? "NASA FIRMS · detecciones reales"
-            : "Datos de ejemplo del diseño"}
+          NASA FIRMS · detecciones reales
         </span>
-        {!isLive && (
-          <button
-            className="text-link"
-            onClick={() => {
-              updateFilters({
-                mode: "range",
-                from: "2026-11-01",
-                to: "2026-11-14",
-              });
-              setPage(0);
-            }}
-          >
-            Ver periodo del 1 al 14 nov
-          </button>
-        )}
         <Link href="/" className="text-link">
           Cambiar filtros en el mapa
         </Link>
@@ -96,20 +78,17 @@ export function StatisticsView() {
             description: "Detecciones del periodo seleccionado",
           },
           {
-            label: "Municipios afectados",
-            value: isLive ? "—" : `${municipal.length} de 47`,
-            description: isLive
-              ? "Requiere límites vectoriales oficiales"
-              : municipal[0]
-                ? `${municipal[0].name} concentra el ${Math.round((municipal[0].count / data.length) * 100)} %`
-                : "Sin municipios afectados",
+            label: "Países con detecciones",
+            value: number(
+              countries.filter((c) => c.name !== "Sin asignar").length,
+            ),
+            description:
+              "Asignación con límites cartográficos de Natural Earth",
           },
           {
-            label: "En áreas protegidas",
-            value: isLive ? "—" : number(protectedCount),
-            description: isLive
-              ? "Fuente territorial pendiente"
-              : `${data.length ? Math.round((protectedCount / data.length) * 100) : 0} % del total · ${areas.filter((a) => a.name !== "Fuera de áreas").length} áreas`,
+            label: "FRP máximo",
+            value: `${data.reduce((max, d) => Math.max(max, d.frp), 0).toFixed(1)} MW`,
+            description: "Potencia radiativa máxima observada",
           },
           {
             label: "Día con más focos",
@@ -150,46 +129,31 @@ export function StatisticsView() {
               marca en naranja
             </p>
           </section>
-          {!isLive && (
-            <div className="stats-comparison">
-              <section className="panel">
-                <h4>Municipios con más focos</h4>
-                <p className="muted text-body-sm">
-                  Top 10 de {municipal.length} municipios con focos
-                </p>
-                <RankingChart
-                  values={[
-                    ...municipal.slice(0, 10),
-                    ...(municipal.length > 10
-                      ? [
-                          {
-                            name: `Otros ${municipal.length - 10} municipios`,
-                            count: municipal
-                              .slice(10)
-                              .reduce((s, v) => s + v.count, 0),
-                          },
-                        ]
-                      : []),
-                  ]}
-                  highlight
-                />
-              </section>
-              <section className="panel">
-                <h4>Por provincia</h4>
-                <p className="muted text-body-sm">
-                  Provincias con al menos un foco
-                </p>
-                <RankingChart values={ranking(data, "province")} highlight />
-                <div className="areas-ranking">
-                  <h4>Áreas protegidas</h4>
-                  <p className="muted text-body-sm">
-                    Focos dentro de áreas protegidas nacionales
-                  </p>
-                  <RankingChart values={areas} />
-                </div>
-              </section>
-            </div>
-          )}
+          <div className="stats-comparison">
+            <section className="panel">
+              <h4>Países con más focos</h4>
+              <RankingChart values={countries.slice(0, 15)} highlight />
+            </section>
+            <section className="panel">
+              <h4>Focos por sensor</h4>
+              <RankingChart values={ranking(data, "satellite")} highlight />
+              <p className="text-caption muted">
+                Las detecciones coincidentes se agrupan en una cuadrícula
+                aproximada de 1 km por día; el sensor mostrado es el
+                representativo.
+              </p>
+              {municipal.some((m) => m.name !== "Sin asignar") && (
+                <>
+                  <h4>Municipios · reto local Cochabamba</h4>
+                  <RankingChart
+                    values={municipal
+                      .filter((m) => m.name !== "Sin asignar")
+                      .slice(0, 10)}
+                  />
+                </>
+              )}
+            </section>
+          </div>
           <section className="panel detections-panel">
             <h4>Detecciones del periodo</h4>
             <p className="muted text-body-sm">
@@ -202,7 +166,7 @@ export function StatisticsView() {
                   <tr>
                     <th>Fecha y hora</th>
                     <th>Municipio</th>
-                    <th>Provincia</th>
+                    <th>País</th>
                     <th>FRP (MW)</th>
                     <th>Coordenadas</th>
                     <th>
@@ -217,7 +181,7 @@ export function StatisticsView() {
                         {dateLabel(d.date)} · {d.time}
                       </td>
                       <td>{d.municipality}</td>
-                      <td>{d.province}</td>
+                      <td>{d.country || "Sin asignar"}</td>
                       <td className="mono">
                         {d.frp.toLocaleString("es-BO", {
                           minimumFractionDigits: 1,

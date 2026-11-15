@@ -10,7 +10,14 @@ export function saveBlob(blob: Blob, filename: string) {
   link.remove();
   setTimeout(() => URL.revokeObjectURL(url), 30000);
 }
+export function assertLiveData(data: Detection[]) {
+  if (data.some((d) => d.origin !== "live"))
+    throw new Error(
+      "Solo se pueden exportar detecciones reales de NASA FIRMS.",
+    );
+}
 export function csvText(data: Detection[]) {
+  assertLiveData(data);
   const cell = (v: string | number) =>
     `"${String(typeof v === "string" && /^[=+\-@\t\r]/.test(v) ? `'${v}` : v).replaceAll('"', '""')}"`;
   const rows = data.map((d) => [
@@ -18,11 +25,12 @@ export function csvText(data: Detection[]) {
     d.time,
     d.municipality,
     d.province,
+    d.country || "Sin asignar",
     d.frp,
     d.latitude,
     d.longitude,
     d.satellite,
-    d.origin === "live" ? "NASA FIRMS" : "DATOS DE EJEMPLO",
+    "NASA FIRMS",
   ]);
   return (
     "\uFEFF" +
@@ -32,6 +40,7 @@ export function csvText(data: Detection[]) {
         "Hora (UTC-4)",
         "Municipio",
         "Provincia",
+        "País",
         "FRP (MW)",
         "Latitud",
         "Longitud",
@@ -47,12 +56,11 @@ export function csvText(data: Detection[]) {
 export function downloadCsv(data: Detection[]) {
   saveBlob(
     new Blob([csvText(data)], { type: "text/csv;charset=utf-8" }),
-    data.some((d) => d.origin === "live")
-      ? "llamita-focos-firms.csv"
-      : "llamita-focos-ejemplo.csv",
+    "llamita-focos-firms.csv",
   );
 }
 export function geojson(data: Detection[]) {
+  assertLiveData(data);
   return {
     type: "FeatureCollection" as const,
     features: data.map((d) => ({
@@ -64,13 +72,14 @@ export function geojson(data: Detection[]) {
       properties: {
         municipio: d.municipality,
         provincia: d.province,
+        pais: d.country || "Sin asignar",
+        pais_cod: d.countryCode || "",
         fecha: d.date,
         hora: d.time,
         frp_mw: d.frp,
         sensor: d.satellite,
-        ejemplo: d.origin !== "live",
-        fuente: d.origin === "live" ? "NASA FIRMS" : "Datos de ejemplo",
-        producto: d.source || "demo",
+        fuente: "NASA FIRMS",
+        producto: d.source || "",
       },
     })),
   };

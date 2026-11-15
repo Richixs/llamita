@@ -35,11 +35,11 @@ const data = localFont({
 
 export const metadata: Metadata = {
   title: {
-    default: "Llamita · Focos de calor en Cochabamba",
+    default: "Llamita · Focos de calor en el mundo",
     template: "%s · Llamita",
   },
   description:
-    "Explora los focos de calor de Cochabamba, consulta estadísticas y genera reportes por fecha y lugar.",
+    "Explora los focos de calor VIIRS y MODIS de todo el mundo, consulta estadísticas y genera reportes por fecha y lugar.",
 };
 export default async function RootLayout({
   children,

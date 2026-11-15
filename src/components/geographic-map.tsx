@@ -2,6 +2,7 @@
 import { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { MapCanvas } from "@/lib/map/canvas-renderer";
 import { GAMC_LAYERS, type Bbox, type GamcLayerId } from "@/lib/geo/catalog";
 import type { Detection } from "@/lib/llamita/data";
 import {
@@ -58,18 +59,28 @@ export default function GeographicMap({
     if (!container.current) return;
     const map = L.map(container.current, {
       zoomControl: false,
-      preferCanvas: true,
+      renderer: new MapCanvas(),
       maxZoom: 19,
-      minZoom: 4,
-      center: [-17.39, -66.17],
-      zoom: 12,
+      minZoom: 1,
+      center: [15, 0],
+      zoom: 2,
+      maxBounds: [
+        [-90, -180],
+        [90, 180],
+      ],
+      maxBoundsViscosity: 1,
     });
     mapRef.current = map;
     L.control.scale({ imperial: false }).addTo(map);
     apiRef.current = {
       getBbox: () => {
         const b = map.getBounds();
-        return [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()];
+        return [
+          Math.max(-180, b.getWest()),
+          Math.max(-90, b.getSouth()),
+          Math.min(180, b.getEast()),
+          Math.min(90, b.getNorth()),
+        ];
       },
       fit: (b) =>
         map.fitBounds([
@@ -79,13 +90,21 @@ export default function GeographicMap({
       zoomIn: () => map.zoomIn(),
       zoomOut: () => map.zoomOut(),
     };
-    const observer = new ResizeObserver(() => map.invalidateSize());
+    let disposed = false;
+    const observer = new ResizeObserver(() => {
+      if (!disposed) map.invalidateSize();
+    });
     observer.observe(container.current);
     return () => {
+      disposed = true;
       observer.disconnect();
-      map.remove();
       mapRef.current = null;
       apiRef.current = null;
+      // Remove paths while their renderer and context are still available.
+      map.eachLayer((layer) => {
+        if (layer instanceof L.Path) map.removeLayer(layer);
+      });
+      map.remove();
     };
     // The map is created once. Subsequent changes update layers below.
   }, [apiRef]);
@@ -244,7 +263,7 @@ export default function GeographicMap({
           bubblingMouseEvents: false,
         });
         const label = document.createElement("span");
-        label.textContent = `${d.satellite} · ${d.frp} MW · ${d.date} ${d.time}`;
+        label.textContent = `${d.country || "Sin asignar"} · ${d.satellite} · ${d.frp} MW · ${d.date} ${d.time}`;
         marker.bindTooltip(label);
         marker.on("click", () => callbacks.current.onPoint(d));
         marker.addTo(group);

@@ -26,7 +26,7 @@ export default function AboutPage() {
       icon: "filter",
       title: "Filtrar por fecha y lugar",
       description:
-        "Consulta por fecha, rectángulo geográfico y sensor. Los filtros territoriales requieren límites vectoriales oficiales.",
+        "Consulta por fecha, país, región y sensor, con histórico desde 2000 según disponibilidad del producto.",
       href: "/",
     },
     {
@@ -40,10 +40,10 @@ export default function AboutPage() {
   return (
     <main id="contenido" className="about-page">
       <p className="overline about-overline">Acerca de Llamita</p>
-      <h1>Vigilar el fuego en Cochabamba, a tiempo</h1>
+      <h1>Vigilar el fuego en el mundo, a tiempo</h1>
       <p className="about-intro">
-        Llamita reúne detecciones satelitales de FIRMS y las capas municipales
-        autorizadas por GAMC en el área de Cochabamba,
+        Llamita reúne detecciones satelitales VIIRS y MODIS de NASA FIRMS en
+        todo el mundo,
         <br className="desktop-break" /> para que brigadas, gobiernos
         municipales y comunidades puedan actuar antes de que un incendio crezca.
       </p>
@@ -105,12 +105,16 @@ export default function AboutPage() {
           y se actualizan después de cada paso de satélite (normalmente en menos
           de 3 horas). Las horas se muestran en hora de Bolivia (UTC−4).
         </p>
-        <p className="notice demo-disclosure">
-          El modo real consulta FIRMS por rectángulo geográfico y muestra las
-          tres capas GAMC autorizadas. Los límites de los 47 municipios, TCO y
-          áreas protegidas aún no están disponibles para asignar o agrupar
-          detecciones. El modo de ejemplo utiliza datos ilustrativos de
-          noviembre de 2026 y está separado de las consultas reales.
+        <p className="notice">
+          Cobertura mundial e histórico desde 2000 según la disponibilidad de
+          cada producto de NASA. Los países se asignan con límites cartográficos
+          generalizados de{" "}
+          <a className="text-link" href="https://www.naturalearthdata.com/">
+            Natural Earth
+          </a>
+          . Los puntos fuera de esos polígonos se conservan como «Sin asignar».
+          El detalle provincial, municipal y las capas GAMC corresponden al reto
+          local de Cochabamba.
         </p>
       </section>
       <div className="about-definitions">

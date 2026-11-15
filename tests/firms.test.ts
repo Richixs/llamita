@@ -75,15 +75,17 @@ test("UTC observations cross Bolivia midnight correctly", () => {
   assert.equal(d.origin, "live");
   assert.equal(d.municipality, "Villa Tunari");
 });
-test("country endpoints fail clearly without calling unavailable NASA services", async () => {
-  await assert.rejects(getCountries(), /deshabilitado/);
+test("country catalog is available locally and rejects unknown countries", async () => {
+  const countries = await getCountries();
+  assert.ok(countries.length > 200);
+  assert.ok(countries.some((c) => c.id === "BOL"));
   await assert.rejects(
     getCountryHotspots({
       source: "MODIS_NRT",
-      countryCode: "PER",
-      dayRange: 4,
+      countryCode: "XXX",
+      dayRange: 1,
     }),
-    /deshabilitado/,
+    /no reconocido/,
   );
 });
 test("FIRMS errors never reveal upstream credentials and malformed CSV is rejected", async (t) => {
@@ -240,4 +242,27 @@ test("historical date ranges fall back to the SP archive product", async (t) => 
     "a fully historical range must only hit the SP product",
   );
   assert.ok(result.data.every((d) => d.source === "MODIS_SP"));
+});
+
+test("NASA quota rejections are classified without leaking credentials", async (t) => {
+  const original = globalThis.fetch,
+    key = process.env.FIRMS_MAP_KEY;
+  process.env.FIRMS_MAP_KEY = "private-quota-key";
+  t.after(() => {
+    globalThis.fetch = original;
+    if (key === undefined) delete process.env.FIRMS_MAP_KEY;
+    else process.env.FIRMS_MAP_KEY = key;
+  });
+  globalThis.fetch = async () =>
+    new Response("Maximum transaction limit exceeded private-quota-key", {
+      status: 403,
+    });
+  await assert.rejects(
+    getAreaHotspots({ source: "MODIS_NRT", coordinates: "world", dayRange: 1 }),
+    (e) =>
+      e instanceof Error &&
+      "status" in e &&
+      e.status === 429 &&
+      !e.message.includes("private-quota-key"),
+  );
 });

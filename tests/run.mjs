@@ -3,3 +3,12 @@ import "./gamc.test.ts";
 import "./geo.test.ts";
 import "./grid.test.ts";
 import "./exports.test.ts";
+
+import "./global.test.ts";
+import "./cache.test.ts";
+
+import "./reports.test.ts";
+
+import "./snapshot.test.ts";
+
+import "./local-scope.test.ts";

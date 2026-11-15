@@ -1,36 +1,28 @@
 "use client";
 import { useApp } from "./app-provider";
-export function DataModeControl() {
-  const { mode, setMode } = useApp();
-  return (
-    <div
-      className="segmented data-mode"
-      role="group"
-      aria-label="Origen de los datos"
-    >
-      <button aria-pressed={mode === "live"} onClick={() => setMode("live")}>
-        Datos reales
-      </button>
-      <button aria-pressed={mode === "demo"} onClick={() => setMode("demo")}>
-        Ejemplo
-      </button>
-    </div>
-  );
-}
 export function DataNotice() {
-  const { mode, loading, error, warnings, reload } = useApp();
-  if (mode === "demo")
-    return (
-      <p className="notice">
-        Datos de ejemplo · noviembre de 2026. Las ubicaciones y capas de este
-        modo son ilustrativas.
-      </p>
-    );
+  const { loading, error, warnings, reload, progress, cancel, cancelled } =
+    useApp();
   return (
     <div className="data-notices">
       {loading && (
         <p className="notice" role="status">
-          Consultando detecciones de NASA FIRMS…
+          Consultando detecciones de NASA FIRMS…{" "}
+          {progress.total > 1 &&
+            `Bloque ${progress.completed} de ${progress.total}`}
+        </p>
+      )}
+      {loading && (
+        <button className="text-link" onClick={cancel}>
+          Cancelar consulta
+        </button>
+      )}
+      {cancelled && (
+        <p className="notice" role="status">
+          Consulta cancelada.{" "}
+          <button className="text-link" onClick={reload}>
+            Reanudar consulta
+          </button>
         </p>
       )}
       {error && (
@@ -50,10 +42,10 @@ export function DataNotice() {
         </details>
       )}
       <p className="text-caption muted">
-        Consulta por rectángulo geográfico. Las detecciones aún no están
-        asignadas a municipios, provincias, TCO o áreas protegidas.
-        Observaciones de distintos satélites pueden coincidir en un mismo
-        incendio.
+        Cobertura mundial VIIRS y MODIS. Los países se asignan con límites de
+        Natural Earth; las costas e islas pequeñas pueden quedar sin asignar.
+        Las provincias y municipios están disponibles para el reto local de
+        Cochabamba. Fechas y horas en UTC−4.
       </p>
     </div>
   );

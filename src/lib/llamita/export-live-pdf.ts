@@ -1,9 +1,15 @@
+import { scopeLabel } from "@/lib/geo/scope";
 import type { Detection } from "./data";
-import { byDay } from "./data";
+import {
+  reportPlan,
+  reportRankings,
+  reportTimeline,
+  maxFrp,
+} from "./report-model";
 import { periodLabel } from "./filters";
 import type { ReportConfig } from "./report";
-import { GAMC_BBOX } from "@/lib/geo/catalog";
-import { geographicSnapshot, svgPng } from "@/lib/geo/snapshot";
+import { WORLD_BBOX } from "@/lib/geo/catalog";
+import { geographicMapSnapshot, svgPng } from "@/lib/geo/snapshot";
 export async function exportLivePdf(config: ReportConfig, data: Detection[]) {
   const { jsPDF } = await import("jspdf");
   const doc = new jsPDF({ unit: "mm", format: "a4", compress: true });
@@ -60,132 +66,207 @@ export async function exportLivePdf(config: ReportConfig, data: Detection[]) {
     doc.setDrawColor("#E4632B");
     doc.line(13, 26, 197, 26);
   }
-  header();
-  text("Focos de calor en el área consultada", 13, 39, 21, "Display");
-  text(periodLabel(config), 13, 48, 10, "Text", muted);
-  const bbox = config.bbox || GAMC_BBOX;
-  text(`BBOX: ${bbox.join(", ")}`, 13, 55, 8, "Mono", muted);
-  let y = 67;
-  if (config.sections.includes("summary")) {
-    const metrics = [
-      ["DETECCIONES", String(data.length)],
-      ["VIIRS", String(data.filter((d) => d.satellite === "VIIRS").length)],
-      ["MODIS", String(data.filter((d) => d.satellite === "MODIS").length)],
-      ["FRP MÁXIMO", `${Math.max(0, ...data.map((d) => d.frp)).toFixed(1)} MW`],
-    ];
-    metrics.forEach(([label, value], i) => {
-      const x = 13 + i * 47;
-      doc.setDrawColor(border);
-      doc.line(x, y, x + 43, y);
-      text(label, x + 2, y + 6, 8, "Mono", muted);
-      text(value, x + 2, y + 16, 18, "Display");
-      doc.line(x, y + 22, x + 43, y + 22);
-    });
-    y += 33;
-  }
-  if (config.sections.includes("map")) {
-    text("Distribución geográfica", 13, y, 15, "Display");
-    y += 5;
-    doc.addImage(
-      await svgPng(geographicSnapshot(data, bbox, 1400, 620), 1400, 620),
-      "PNG",
-      13,
-      y,
-      184,
-      82,
-    );
-    y += 88;
-    text(
-      "Coordenadas reales · Web Mercator · sin polígonos administrativos",
-      13,
-      y,
-      8,
-      "Text",
-      muted,
-    );
-    y += 12;
-  }
-  if (config.sections.includes("daily")) {
-    text("Focos por día", 13, y, 15, "Display");
-    y += 7;
-    const days = byDay(
-        data,
-        config.mode === "day" ? config.to : config.from,
-        config.to,
-      ),
-      max = Math.max(1, ...days.map((d) => d.count)),
-      cell = 180 / Math.max(1, days.length);
-    for (let i = 0; i < 4; i++) {
-      doc.setDrawColor(border);
-      doc.line(17, y + (38 * i) / 3, 197, y + (38 * i) / 3);
-    }
-    days.forEach((d, i) => {
-      const height = (d.count / max) * 38;
-      doc.setFillColor(d.count === max ? "#E4632B" : muted);
-      doc.rect(17 + i * cell, y + 38 - height, cell * 0.6, height, "F");
-      text(
-        String(Number(d.name.slice(-2))),
-        17 + i * cell,
-        y + 43,
-        6,
-        "Mono",
-        muted,
-      );
-    });
-    y += 53;
-  }
-  text(
-    "Las observaciones de distintos sensores pueden coincidir en un mismo incendio. No se calculan totales administrativos sin límites oficiales.",
-    13,
-    Math.min(y, 255),
-    9,
-    "Text",
-    muted,
-    184,
+  const bbox = config.bbox || WORLD_BBOX;
+  const ranks = reportRankings(data);
+  const timeline = reportTimeline(
+    data,
+    config.mode === "day" ? config.to : config.from,
+    config.to,
   );
-  if (config.warnings?.length) {
-    text(
-      "Consulta las páginas de disponibilidad antes de interpretar los totales.",
-      13,
-      271,
-      7,
-      "Text",
-      muted,
-    );
-    for (let offset = 0; offset < config.warnings.length; offset += 8) {
-      doc.addPage();
-      header();
+  const pages = reportPlan(config, data);
+  function bars(
+    title: string,
+    values: { name: string; count: number }[],
+    startY: number,
+    x = 13,
+    width = 184,
+  ) {
+    text(title, x, startY, 14, "Display");
+    const max = values.reduce((m, v) => Math.max(m, v.count), 1);
+    values.forEach((v, i) => {
+      const y = startY + 10 + i * 8;
+      text(
+        v.name.length > 29 ? v.name.slice(0, 28) + "…" : v.name,
+        x,
+        y,
+        8,
+        "Text",
+        ink,
+      );
+      doc.setFillColor(i === 0 ? "#E4632B" : muted);
+      doc.rect(
+        x + width * 0.47,
+        y - 3,
+        Math.max(0.3, (v.count / max) * width * 0.36),
+        3,
+        "F",
+      );
+      text(String(v.count), x + width * 0.86, y, 8, "Mono");
+    });
+  }
+  for (let pageIndex = 0; pageIndex < pages.length; pageIndex++) {
+    if (pageIndex) doc.addPage();
+    header();
+    const page = pages[pageIndex];
+    if (page.kind === "overview") {
+      text(`Focos de calor · ${scopeLabel(config)}`, 13, 39, 20, "Display");
+      text(periodLabel(config), 13, 48, 10, "Text", muted);
+      text(`BBOX: ${bbox.join(", ")}`, 13, 55, 8, "Mono", muted);
+      let y = 67;
+      if (config.sections.includes("summary")) {
+        const metrics = [
+          ["DETECCIONES", String(data.length)],
+          [
+            "PAÍSES",
+            String(
+              ranks.countries.filter((v) => v.name !== "Sin asignar").length,
+            ),
+          ],
+          [
+            "VIIRS / MODIS",
+            `${data.filter((d) => d.satellite === "VIIRS").length} / ${data.filter((d) => d.satellite === "MODIS").length}`,
+          ],
+          ["FRP MÁXIMO", `${maxFrp(data).toFixed(1)} MW`],
+        ];
+        metrics.forEach(([label, value], i) => {
+          const x = 13 + i * 47;
+          doc.setDrawColor(border);
+          doc.line(x, y, x + 43, y);
+          text(label, x + 2, y + 6, 8, "Mono", muted);
+          text(value, x + 2, y + 16, 14, "Display");
+          doc.line(x, y + 22, x + 43, y + 22);
+        });
+        y += 33;
+      }
+      if (config.sections.includes("map")) {
+        text("Distribución geográfica", 13, y, 15, "Display");
+        y += 5;
+        doc.addImage(
+          await svgPng(
+            await geographicMapSnapshot(data, bbox, 1400, 620),
+            1400,
+            620,
+          ),
+          "PNG",
+          13,
+          y,
+          184,
+          82,
+        );
+        y += 94;
+      }
+      if (config.sections.includes("daily")) {
+        text(timeline.title, 13, y, 15, "Display");
+        y += 7;
+        const values = timeline.values,
+          max = values.reduce((m, v) => Math.max(m, v.count), 1),
+          cell = 180 / Math.max(1, values.length);
+        for (let i = 0; i < 4; i++) {
+          doc.setDrawColor(border);
+          doc.line(17, y + (38 * i) / 3, 197, y + (38 * i) / 3);
+        }
+        values.forEach((v, i) => {
+          const h = (v.count / max) * 38;
+          doc.setFillColor(v.count === max ? "#E4632B" : muted);
+          if (h) doc.rect(17 + i * cell, y + 38 - h, cell * 0.6, h, "F");
+          if (values.length <= 31)
+            text(
+              "label" in v ? String(v.label) : v.name.slice(-2),
+              17 + i * cell,
+              y + 43,
+              6,
+              "Mono",
+              muted,
+            );
+        });
+        y += 53;
+      }
+      text(
+        "Detecciones agrupadas por día y cuadrícula aproximada de 1 km. VIIRS representa las coincidencias con MODIS. Un foco no equivale a un incendio independiente.",
+        13,
+        Math.min(y, 257),
+        8,
+        "Text",
+        muted,
+        184,
+      );
+    }
+    if (page.kind === "ranking") {
+      text("Rankings del periodo", 13, 39, 21, "Display");
+      text(periodLabel(config), 13, 49, 10, "Text", muted);
+      bars("Países con más focos · top 15", ranks.countries.slice(0, 15), 63);
+      bars("Por sensor representativo", ranks.sensors, 203);
+      text(
+        "Países asignados con límites generalizados de Natural Earth. Los puntos fuera de los polígonos se conservan como Sin asignar.",
+        13,
+        244,
+        9,
+        "Text",
+        muted,
+        184,
+      );
+    }
+    if (page.kind === "local-ranking") {
+      text("Rankings del reto local · Cochabamba", 13, 39, 19, "Display");
+      text(periodLabel(config), 13, 49, 10, "Text", muted);
+      bars(
+        "Municipios · top 15",
+        ranks.municipalities.slice(0, 15),
+        65,
+        13,
+        88,
+      );
+      bars("Provincias · top 15", ranks.provinces.slice(0, 15), 65, 109, 88);
+      text(
+        "Solo se incluyen detecciones con asignación administrativa dentro de los límites de Cochabamba.",
+        13,
+        215,
+        9,
+        "Text",
+        muted,
+        184,
+      );
+    }
+    if (page.kind === "warnings") {
       text("Disponibilidad de los datos", 13, 40, 19, "Display");
       text(periodLabel(config), 13, 49, 10, "Text", muted);
-      let warningY = 63;
-      for (const warning of config.warnings.slice(offset, offset + 8)) {
+      let y = 63;
+      for (const warning of config.warnings!.slice(
+        page.offset,
+        page.offset + 8,
+      )) {
         doc.setFont("Text");
-        doc.setFontSize(10);
+        doc.setFontSize(9);
         const lines = doc.splitTextToSize(warning, 180) as string[];
-        text(lines.join("\n"), 13, warningY, 10, "Text", muted);
-        warningY += lines.length * 5 + 8;
+        text(lines.join("\n"), 13, y, 9, "Text", muted);
+        y += lines.length * 4.5 + 7;
       }
     }
-  }
-  if (config.sections.includes("table"))
-    for (let offset = 0; offset < data.length; offset += 28) {
-      doc.addPage();
-      header();
+    if (page.kind === "table") {
       text("Detecciones del periodo", 13, 39, 18, "Display");
-      text("Fecha / hora (UTC−4)", 13, 49, 8, "Mono", muted);
-      text("Sensor", 68, 49, 8, "Mono", muted);
-      text("FRP MW", 105, 49, 8, "Mono", muted);
-      text("Coordenadas", 132, 49, 8, "Mono", muted);
-      data.slice(offset, offset + 28).forEach((d, i) => {
-        const rowY = 58 + i * 7;
-        text(`${d.date} ${d.time}`, 13, rowY, 8, "Mono");
-        text(d.satellite, 68, rowY, 8);
-        text(String(d.frp), 105, rowY, 8, "Mono");
-        text(`${d.latitude}, ${d.longitude}`, 132, rowY, 7, "Mono");
+      text("Fecha / hora UTC−4", 13, 49, 8, "Mono", muted);
+      text("País", 62, 49, 8, "Mono", muted);
+      text("Sensor", 103, 49, 8, "Mono", muted);
+      text("FRP MW", 126, 49, 8, "Mono", muted);
+      text("Coordenadas", 148, 49, 8, "Mono", muted);
+      data.slice(page.offset, page.offset + 28).forEach((d, i) => {
+        const y = 58 + i * 7;
+        text(`${d.date} ${d.time}`, 13, y, 7, "Mono");
+        text((d.country || "Sin asignar").slice(0, 20), 62, y, 7);
+        text(d.satellite, 103, y, 8);
+        text(String(d.frp), 126, y, 7, "Mono");
+        text(
+          `${d.latitude.toFixed(4)}, ${d.longitude.toFixed(4)}`,
+          148,
+          y,
+          6,
+          "Mono",
+        );
         doc.setDrawColor(border);
-        doc.line(13, rowY + 2, 197, rowY + 2);
+        doc.line(13, y + 2, 197, y + 2);
       });
     }
+  }
   for (let p = 1; p <= doc.getNumberOfPages(); p++) {
     doc.setPage(p);
     doc.setDrawColor(border);

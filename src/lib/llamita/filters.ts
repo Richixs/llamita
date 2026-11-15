@@ -2,6 +2,9 @@ export interface Filters {
   mode: "day" | "range";
   from: string;
   to: string;
+  local?: boolean;
+  continent?: string;
+  country?: string;
   province: string;
   municipality: string;
   territory: string;
@@ -10,8 +13,11 @@ export interface Filters {
 }
 export const initialFilters: Filters = {
   mode: "day",
-  from: "2026-11-14",
-  to: "2026-11-14",
+  from: "",
+  to: "",
+  country: "",
+  continent: "",
+  local: false,
   province: "",
   municipality: "",
   territory: "",
@@ -49,13 +55,14 @@ export function periodError(from: string, to: string) {
   if (
     ![from, to].every(
       (value) =>
-        /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(Date.parse(value)),
+        /^\d{4}-\d{2}-\d{2}$/.test(value) &&
+        Number.isFinite(Date.parse(value)) &&
+        new Date(value).toISOString().slice(0, 10) === value,
     )
   )
     return "Las fechas no son válidas.";
   if (from > to)
     return "La fecha de inicio debe ser anterior o igual a la fecha final.";
-  if ((Date.parse(to) - Date.parse(from)) / 86400000 > 365)
-    return "El periodo puede tener hasta 366 días.";
+  if (from < "2000-01-01") return "El histórico comienza en el año 2000.";
   return "";
 }

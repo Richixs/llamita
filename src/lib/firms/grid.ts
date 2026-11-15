@@ -1,19 +1,13 @@
 import type { Detection } from "@/lib/llamita/data";
 
-// ~1km grid, calibrated to Cochabamba's latitude band so a fixed-degree
-// step corresponds to roughly the same real-world distance on both axes
-// (longitude degrees shrink with latitude; a global equal-area grid is
-// overkill for an app scoped to one department).
-const CENTER_LAT_DEG = -17.4;
-const METERS_PER_DEGREE_LAT = 111320;
-const GRID_SIZE_METERS = 1000;
-const LAT_STEP = GRID_SIZE_METERS / METERS_PER_DEGREE_LAT;
-const LON_STEP =
-  GRID_SIZE_METERS /
-  (METERS_PER_DEGREE_LAT * Math.cos((CENTER_LAT_DEG * Math.PI) / 180));
-
+// Latitude bands keep east-west cells close to 1 km at every latitude.
+const LAT_STEP = 1000 / 111320;
 export function gridCell(lat: number, lon: number): string {
-  return `${Math.floor(lat / LAT_STEP)}:${Math.floor(lon / LON_STEP)}`;
+  const row = Math.floor(lat / LAT_STEP);
+  const centerLat = (row + 0.5) * LAT_STEP;
+  const lonStep =
+    1000 / (111320 * Math.max(0.001, Math.cos((centerLat * Math.PI) / 180)));
+  return `${row}:${Math.floor(lon / lonStep)}`;
 }
 
 // Harmonizes VIIRS (375m pixels) and MODIS (1km pixels) onto a common grid:

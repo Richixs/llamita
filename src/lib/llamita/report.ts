@@ -1,22 +1,25 @@
-import { detections, filterDetections, type Detection } from "./data";
-import { GAMC_BBOX, type Bbox } from "@/lib/geo/catalog";
+import { scopeLabel } from "@/lib/geo/scope";
+import { reportPlan } from "./report-model";
+import { filterDetections, type Detection } from "./data";
+import { WORLD_BBOX, type Bbox } from "@/lib/geo/catalog";
 import { initialFilters, periodError, type Filters } from "./filters";
 export type ReportFormat = "PDF" | "Excel" | "CSV" | "Shapefile" | "GeoJSON";
-export type ReportSection =
-  "summary" | "map" | "daily" | "ranking" | "protected" | "table";
+export type ReportSection = "summary" | "map" | "daily" | "ranking" | "table";
 export const sectionLabels: Record<ReportSection, string> = {
   summary: "Resumen con cifras clave",
   map: "Mapa de focos",
   daily: "Gráfico de focos por día",
-  ranking: "Ranking de municipios",
-  protected: "Focos en áreas protegidas",
+  ranking: "Rankings por país y sensor",
   table: "Tabla con todas las detecciones",
 };
 export type AreaType =
   "all" | "province" | "municipality" | "territory" | "protectedArea";
 export interface ReportConfig {
-  origin?: "live" | "demo";
+  origin: "live";
   bbox?: Bbox;
+  country?: string;
+  continent?: string;
+  local?: boolean;
   warnings?: string[];
   areaType: AreaType;
   areas: string[];
@@ -38,24 +41,27 @@ export interface SavedReport {
   size?: number;
 }
 export const defaultReport: ReportConfig = {
-  origin: "demo",
-  areaType: "municipality",
-  areas: ["Villa Tunari", "Chimoré", "Puerto Villarroel", "Shinahota"],
+  origin: "live",
+  areaType: "all",
+  areas: [],
   mode: "range",
-  from: "2026-11-01",
-  to: "2026-11-14",
-  sections: ["summary", "map", "daily", "ranking", "protected"],
+  from: "",
+  to: "",
+  sections: ["summary", "map", "daily", "ranking"],
   format: "PDF",
   satellite: "all",
 };
 export function reportData(
   config: ReportConfig,
-  source: Detection[] = detections,
+  source: Detection[],
 ): Detection[] {
   const data = filterDetections(
     {
       ...initialFilters,
       ...config.sourceFilters,
+      country: config.country,
+      local: config.local,
+      continent: config.continent,
       mode: config.mode,
       from: config.from,
       to: config.to,
@@ -63,14 +69,20 @@ export function reportData(
     },
     source,
   );
-  if (config.areaType === "all") return data;
+  const bounded = config.bbox
+    ? data.filter(
+        (d) =>
+          d.longitude >= config.bbox![0] &&
+          d.longitude <= config.bbox![2] &&
+          d.latitude >= config.bbox![1] &&
+          d.latitude <= config.bbox![3],
+      )
+    : data;
+  if (config.areaType === "all") return bounded;
   const key = config.areaType;
-  return data.filter((d) => config.areas.includes(d[key]));
+  return bounded.filter((d) => config.areas.includes(d[key]));
 }
-export function validateReport(
-  config: ReportConfig,
-  source: Detection[] = detections,
-) {
+export function validateReport(config: ReportConfig, source: Detection[]) {
   const error = periodError(
     config.mode === "day" ? config.to : config.from,
     config.to,
@@ -81,9 +93,7 @@ export function validateReport(
   if (config.format === "PDF" && !config.sections.length)
     return "Selecciona al menos una sección para el PDF.";
   if (!reportData(config, source).length)
-    return config.origin === "live"
-      ? "No hay detecciones para el área y periodo elegidos."
-      : "No hay focos con esta selección. Los datos de ejemplo abarcan del 1 al 14 de noviembre de 2026.";
+    return "No hay detecciones para el área y periodo elegidos.";
   return "";
 }
 export function configFromFilters(filters: Filters): ReportConfig {
@@ -114,7 +124,9 @@ export function isReportConfig(value: unknown): value is ReportConfig {
   if (!value || typeof value !== "object") return false;
   const c = value as ReportConfig;
   return (
-    (c.origin === undefined || ["live", "demo"].includes(c.origin)) &&
+    c.origin === "live" &&
+    (!c.country ||
+      (typeof c.country === "string" && /^[A-Z]{3}$/.test(c.country))) &&
     (!c.bbox ||
       (Array.isArray(c.bbox) &&
         c.bbox.length === 4 &&
@@ -175,62 +187,39 @@ export function readSavedReports(raw: string | null): SavedReport[] {
     return [];
   }
 }
-export function exampleReports(): SavedReport[] {
-  return [
-    {
-      id: "example-tropico",
-      name: "Trópico · 1–14 nov 2026",
-      createdAt: new Date().toISOString(),
-      status: "ready",
-      config: { ...defaultReport },
-    },
-    {
-      id: "example-cochabamba",
-      name: "Todo Cochabamba · noviembre 2026",
-      createdAt: new Date().toISOString(),
-      status: "ready",
-      config: { ...defaultReport, areaType: "all", areas: [], format: "CSV" },
-    },
-  ];
-}
-export function reportPages(
-  config: ReportConfig,
-  data: Detection[] = detections,
-) {
-  return (
-    1 +
-    (config.origin === "live"
-      ? Math.ceil((config.warnings?.length || 0) / 8)
-      : 0) +
-    (config.sections.includes("protected") ? 1 : 0) +
-    (config.sections.includes("table") ? Math.ceil(data.length / 28) : 0)
-  );
+export function reportPages(config: ReportConfig, data: Detection[]) {
+  return reportPlan(config, data).length;
 }
 
 export function liveConfig(
   filters: Filters,
-  bbox: Bbox = GAMC_BBOX,
+  bbox: Bbox = WORLD_BBOX,
 ): ReportConfig {
   return {
     ...configFromFilters(filters),
     origin: "live",
     bbox,
-    areaType: "all",
-    areas: [],
+    country: filters.country,
+    continent: filters.continent,
+    local: filters.local,
     sourceFilters: undefined,
-    sections: ["summary", "map", "daily"],
+    sections: ["summary", "map", "daily", "ranking"],
   };
 }
-export function storeReports(reports: SavedReport[], origin: "live" | "demo") {
-  const others = readSavedReports(
-    localStorage.getItem(REPORT_STORAGE_KEY),
-  ).filter((r) => (r.config.origin || "demo") !== origin);
+export function storeReports(reports: SavedReport[]) {
   localStorage.setItem(
     REPORT_STORAGE_KEY,
-    JSON.stringify(
-      [...reports, ...others]
-        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-        .slice(0, 20),
-    ),
+    JSON.stringify(reports.slice(0, 20)),
   );
+}
+
+export function reportFilename(config: ReportConfig, extension: string) {
+  const scope = scopeLabel(config)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+  const from = config.mode === "day" ? config.to : config.from;
+  return `llamita-${scope}-${from}${from === config.to ? "" : `_${config.to}`}.${extension}`;
 }

@@ -1,17 +1,18 @@
 "use client";
+import { usePathname } from "next/navigation";
 import { createContext, useContext, useState, type ReactNode } from "react";
 import { initialFilters, type Filters } from "@/lib/llamita/filters";
 import { filterDetections, type Detection } from "@/lib/llamita/data";
-import { GAMC_BBOX, type Bbox } from "@/lib/geo/catalog";
+import { WORLD_BBOX, type Bbox } from "@/lib/geo/catalog";
 import { useLiveDetections } from "./use-live-detections";
-export type DataMode = "live" | "demo";
 interface AppState {
   filters: Filters;
   updateFilters: (patch: Partial<Filters>) => void;
   resetFilters: () => void;
-  mode: DataMode;
-  setMode: (mode: DataMode) => void;
   data: Detection[];
+  progress: { completed: number; total: number };
+  cancel: () => void;
+  cancelled: boolean;
   loading: boolean;
   error: string;
   warnings: string[];
@@ -29,35 +30,30 @@ export function AppProvider({
   children: ReactNode;
   today: string;
 }) {
-  const [mode, setDataMode] = useState<DataMode>("live");
+  const pathname = usePathname();
   const realFilters = { ...initialFilters, from: today, to: today };
   const [filters, setFilters] = useState<Filters>(realFilters);
-  const [bbox, setBbox] = useState<Bbox>(GAMC_BBOX);
+  const [bbox, setBbox] = useState<Bbox>(WORLD_BBOX);
   const live = useLiveDetections({
     from: filters.mode === "day" ? filters.to : filters.from,
     to: filters.to,
     sensor: filters.satellite,
     bbox,
-    enabled: mode === "live",
+    country: filters.country,
+    continent: filters.continent,
+    enabled: pathname === "/" || pathname === "/estadisticas",
   });
-  function setMode(next: DataMode) {
-    setDataMode(next);
-    setFilters(next === "demo" ? initialFilters : realFilters);
-  }
   return (
     <AppContext.Provider
       value={{
         filters,
         updateFilters: (patch) =>
           setFilters((current) => ({ ...current, ...patch })),
-        resetFilters: () =>
-          setFilters(mode === "demo" ? initialFilters : realFilters),
-        mode,
-        setMode,
-        data:
-          mode === "demo"
-            ? filterDetections(filters)
-            : filterDetections(filters, live.data),
+        resetFilters: () => setFilters(realFilters),
+        data: filterDetections(filters, live.data),
+        progress: live.progress,
+        cancel: live.cancel,
+        cancelled: live.cancelled,
         loading: live.loading,
         error: live.error,
         warnings: live.warnings,

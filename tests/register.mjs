@@ -5,6 +5,8 @@ import ts from "typescript";
 const root = fileURLToPath(new URL("../", import.meta.url));
 registerHooks({
   resolve(specifier, context, next) {
+    if (context.parentURL?.includes("/node_modules/"))
+      return next(specifier, context);
     if (specifier.startsWith("@/"))
       specifier = pathToFileURL(`${root}src/${specifier.slice(2)}`).href;
     if (specifier.startsWith(".") || specifier.startsWith("file:")) {

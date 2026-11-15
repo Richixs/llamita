@@ -1,4 +1,10 @@
 export type Bbox = [west: number, south: number, east: number, north: number];
+export const WORLD_BBOX: Bbox = [-180, -90, 180, 90];
+export const MIN_HISTORY_DATE = "2000-01-01";
+export const MAX_GLOBAL_QUERY_DAYS = 5;
+export function isWideArea(bbox: Bbox) {
+  return bbox[2] - bbox[0] > 10 || bbox[3] - bbox[1] > 10;
+}
 export const GAMC_BBOX: Bbox = [-66.280703, -17.53119, -66.06952, -17.257306];
 // A rectangular regional query, not an administrative boundary.
 export const REGIONAL_BBOX: Bbox = [-67.9, -18.9, -63.5, -15.5];

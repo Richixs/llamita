@@ -20,11 +20,11 @@ test("real exports preserve coordinates and identify NASA without demo attributi
   assert.equal(csv.includes("DATOS DE EJEMPLO"), false);
   const feature = geojson([live]).features[0];
   assert.deepEqual(feature.geometry.coordinates, [-66.17, -17.39]);
-  assert.equal(feature.properties.ejemplo, false);
+  assert.equal("ejemplo" in feature.properties, false);
   assert.equal(feature.properties.producto, "VIIRS_NOAA20_NRT");
 });
-test("legacy example records remain explicitly labeled as examples", () => {
+test("legacy example records cannot be exported", () => {
   const demo = { ...live, origin: undefined, source: undefined };
-  assert.ok(csvText([demo]).includes("DATOS DE EJEMPLO"));
-  assert.equal(geojson([demo]).features[0].properties.ejemplo, true);
+  assert.throws(() => csvText([demo]), /detecciones reales/);
+  assert.throws(() => geojson([demo]), /detecciones reales/);
 });
