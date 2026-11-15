@@ -19,17 +19,24 @@ function getMapKey(): string {
 }
 
 async function fetchFirmsText(path: string): Promise<string> {
-  const response = await fetch(`${FIRMS_BASE_URL}${path}`, { cache: "no-store" });
+  const response = await fetch(`${FIRMS_BASE_URL}${path}`, {
+    cache: "no-store",
+  });
   const body = await response.text();
   if (!response.ok) {
-    throw new FirmsUpstreamError(`FIRMS request failed: ${body || response.statusText}`, response.status);
+    throw new FirmsUpstreamError(
+      `FIRMS request failed: ${body || response.statusText}`,
+      response.status,
+    );
   }
   return body;
 }
 
 export async function getMapKeyStatus(): Promise<FirmsKeyStatus> {
   const mapKey = getMapKey();
-  const text = await fetchFirmsText(`/mapserver/mapkey_status/?MAP_KEY=${mapKey}`);
+  const text = await fetchFirmsText(
+    `/mapserver/mapkey_status/?MAP_KEY=${mapKey}`,
+  );
   return JSON.parse(text) as FirmsKeyStatus;
 }
 
@@ -37,7 +44,9 @@ export async function getDataAvailability(
   sensor: FirmsAvailabilitySensor,
 ): Promise<FirmsAvailability[]> {
   const mapKey = getMapKey();
-  const text = await fetchFirmsText(`/api/data_availability/csv/${mapKey}/${sensor}`);
+  const text = await fetchFirmsText(
+    `/api/data_availability/csv/${mapKey}/${sensor}`,
+  );
   return parseCsv(text) as unknown as FirmsAvailability[];
 }
 
@@ -48,7 +57,12 @@ export async function getAreaHotspots(params: {
   date?: string;
 }): Promise<FirmsHotspot[]> {
   const mapKey = getMapKey();
-  const segments = [mapKey, params.source, params.coordinates, String(params.dayRange)];
+  const segments = [
+    mapKey,
+    params.source,
+    params.coordinates,
+    String(params.dayRange),
+  ];
   if (params.date) {
     segments.push(params.date);
   }
@@ -81,7 +95,12 @@ export async function getCountryHotspots(params: {
   date?: string;
 }): Promise<FirmsHotspot[]> {
   const mapKey = getMapKey();
-  const segments = [mapKey, params.source, params.countryCode, String(params.dayRange)];
+  const segments = [
+    mapKey,
+    params.source,
+    params.countryCode,
+    String(params.dayRange),
+  ];
   if (params.date) {
     segments.push(params.date);
   }

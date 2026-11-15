@@ -3,8 +3,14 @@
  * plain, mostly-numeric values. Handles quoted fields defensively even
  * though FIRMS data doesn't normally need them.
  */
-export function parseCsv(text: string, delimiter = ","): Record<string, string>[] {
-  const lines = text.trim().split(/\r?\n/).filter((line) => line.length > 0);
+export function parseCsv(
+  text: string,
+  delimiter = ",",
+): Record<string, string>[] {
+  const lines = text
+    .trim()
+    .split(/\r?\n/)
+    .filter((line) => line.length > 0);
   if (lines.length < 2) {
     return [];
   }

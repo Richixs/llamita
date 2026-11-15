@@ -14,7 +14,9 @@ export function parseSource(value: string | null): FirmsSource {
   return value as FirmsSource;
 }
 
-export function parseAvailabilitySensor(value: string | null): FirmsAvailabilitySensor {
+export function parseAvailabilitySensor(
+  value: string | null,
+): FirmsAvailabilitySensor {
   if (!value || value === "all") {
     return "all";
   }
@@ -24,7 +26,9 @@ export function parseAvailabilitySensor(value: string | null): FirmsAvailability
 // AREA_COORDINATES is either the literal "world" or "west,south,east,north".
 export function parseAreaCoordinates(value: string | null): string {
   if (!value) {
-    throw new FirmsValidationError('"bbox" is required (e.g. "-70,-23,-57,-9" or "world")');
+    throw new FirmsValidationError(
+      '"bbox" is required (e.g. "-70,-23,-57,-9" or "world")',
+    );
   }
   if (value.trim().toLowerCase() === "world") {
     return "world";
@@ -32,7 +36,9 @@ export function parseAreaCoordinates(value: string | null): string {
 
   const parts = value.split(",").map((part) => part.trim());
   if (parts.length !== 4) {
-    throw new FirmsValidationError('"bbox" must have 4 values: west,south,east,north');
+    throw new FirmsValidationError(
+      '"bbox" must have 4 values: west,south,east,north',
+    );
   }
 
   const [west, south, east, north] = parts.map(Number);
@@ -43,7 +49,9 @@ export function parseAreaCoordinates(value: string | null): string {
     throw new FirmsValidationError('"bbox" values are out of range');
   }
   if (west >= east || south >= north) {
-    throw new FirmsValidationError('"bbox" must satisfy west < east and south < north');
+    throw new FirmsValidationError(
+      '"bbox" must satisfy west < east and south < north',
+    );
   }
 
   return `${west},${south},${east},${north}`;
@@ -54,7 +62,11 @@ export function parseDayRange(value: string | null): number {
     return MIN_DAY_RANGE;
   }
   const dayRange = Number(value);
-  if (!Number.isInteger(dayRange) || dayRange < MIN_DAY_RANGE || dayRange > MAX_DAY_RANGE) {
+  if (
+    !Number.isInteger(dayRange) ||
+    dayRange < MIN_DAY_RANGE ||
+    dayRange > MAX_DAY_RANGE
+  ) {
     throw new FirmsValidationError(
       `"dayRange" must be an integer between ${MIN_DAY_RANGE} and ${MAX_DAY_RANGE}`,
     );
@@ -74,7 +86,9 @@ export function parseDateParam(value: string | null): string | undefined {
 
 export function parseCountryCode(value: string | null): string {
   if (!value || !COUNTRY_CODE_PATTERN.test(value)) {
-    throw new FirmsValidationError('"code" must be a 3-letter country code (e.g. "BOL")');
+    throw new FirmsValidationError(
+      '"code" must be a 3-letter country code (e.g. "BOL")',
+    );
   }
   return value.toUpperCase();
 }

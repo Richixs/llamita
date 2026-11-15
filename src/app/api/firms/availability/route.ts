@@ -5,7 +5,9 @@ import { parseAvailabilitySensor } from "@/lib/firms/validation";
 
 export async function GET(request: NextRequest) {
   try {
-    const sensor = parseAvailabilitySensor(request.nextUrl.searchParams.get("sensor"));
+    const sensor = parseAvailabilitySensor(
+      request.nextUrl.searchParams.get("sensor"),
+    );
     const availability = await getDataAvailability(sensor);
     return NextResponse.json(availability);
   } catch (error) {

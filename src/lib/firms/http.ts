@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
-import { FirmsConfigError, FirmsUpstreamError, FirmsValidationError } from "./errors";
+import {
+  FirmsConfigError,
+  FirmsUpstreamError,
+  FirmsValidationError,
+} from "./errors";
 
 export function toErrorResponse(error: unknown): NextResponse {
   if (error instanceof FirmsValidationError) {
