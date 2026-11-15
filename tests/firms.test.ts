@@ -191,11 +191,14 @@ test("combined queries deduplicate observations and filter by Bolivia days and b
     bbox: [-67, -18, -66, -17] as [number, number, number, number],
   };
   const result = await queryHotspots(query);
-  assert.equal(result.data.length, 2);
+  // Both surviving observations sit at the exact same coordinates and
+  // Bolivia-local day, so the grid harmonization step merges them into one.
+  assert.equal(result.data.length, 1);
   assert.ok(
     result.data.every((d) => d.date === "2026-11-14" && d.origin === "live"),
   );
   assert.equal(result.data[0].time, "23:59");
+  assert.equal(result.data[0].observationCount, 2);
   assert.equal(requests, 2);
   await queryHotspots(query);
   assert.equal(requests, 2, "identical queries reuse the bounded server cache");
