@@ -9,6 +9,7 @@ import {
   isReportConfig,
   DRAFT_STORAGE_KEY,
   liveConfig,
+  reportData,
   type ReportConfig,
 } from "@/lib/llamita/report";
 import { WORLD_BBOX } from "@/lib/geo/catalog";
@@ -21,8 +22,10 @@ export function PdfView() {
   const [config, setConfig] = useState<ReportConfig>(() =>
     liveConfig(filters, bbox),
   );
+  const [draftReady, setDraftReady] = useState(false);
   useEffect(() => {
     function load() {
+      setDraftReady(true);
       try {
         const raw = localStorage.getItem(DRAFT_STORAGE_KEY);
         if (raw) {
@@ -42,8 +45,9 @@ export function PdfView() {
     bbox: config.bbox || WORLD_BBOX,
     country: config.country,
     continent: config.continent,
+    enabled: draftReady,
   });
-  const data = live.data;
+  const data = reportData(config, live.data);
   return (
     <main id="contenido" className="pdf-workspace">
       <div className="print-toolbar">
@@ -53,7 +57,13 @@ export function PdfView() {
         </Link>
         <button
           className="btn btn-primary"
-          disabled={live.loading || !!live.error}
+          disabled={
+            !draftReady ||
+            live.loading ||
+            !!live.error ||
+            live.cancelled ||
+            !data.length
+          }
           onClick={() => window.print()}
         >
           <Icon name="download" />
@@ -61,8 +71,14 @@ export function PdfView() {
         </button>
       </div>
       {live.loading && (
+        <button className="btn" onClick={live.cancel}>
+          Cancelar consulta
+        </button>
+      )}
+      {live.loading && (
         <p className="notice" role="status">
-          Consultando detecciones…
+          Consultando detecciones… Bloque {live.progress.completed} de{" "}
+          {live.progress.total}
         </p>
       )}
       {live.error && (
@@ -70,14 +86,16 @@ export function PdfView() {
           {live.error}
         </p>
       )}
-      <ReportDocument
-        config={{
-          ...config,
-          warnings: live.warnings,
-        }}
-        data={data}
-        generatedAt={dateLabel(today)}
-      />
+      {!live.loading && !live.error && !live.cancelled && draftReady && (
+        <ReportDocument
+          config={{
+            ...config,
+            warnings: live.warnings,
+          }}
+          data={data}
+          generatedAt={dateLabel(today)}
+        />
+      )}
     </main>
   );
 }

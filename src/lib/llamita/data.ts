@@ -62,11 +62,7 @@ export function byDay(data: Detection[], from: string, to: string) {
   if (!from || !to || from > to) return result;
   const counts = new Map<string, number>();
   for (const d of data) counts.set(d.date, (counts.get(d.date) || 0) + 1);
-  for (
-    let t = Date.parse(from);
-    t <= Date.parse(to) && result.length < 10000;
-    t += 86400000
-  ) {
+  for (let t = Date.parse(from); t <= Date.parse(to); t += 86400000) {
     const name = new Date(t).toISOString().slice(0, 10);
     result.push({ name, count: counts.get(name) || 0 });
   }

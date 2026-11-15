@@ -3,7 +3,7 @@ export function DailyChart({
   values,
   compact = false,
 }: {
-  values: { name: string; count: number }[];
+  values: { name: string; count: number; label?: string }[];
   compact?: boolean;
 }) {
   const max = Math.max(1, ...values.map((v) => v.count));
@@ -84,7 +84,7 @@ export function DailyChart({
                     fontFamily="var(--font-data)"
                     fill="var(--color-tinta-suave)"
                   >
-                    {Number(v.name.slice(-2))}
+                    {v.label || Number(v.name.slice(-2))}
                   </text>
                 </>
               )}

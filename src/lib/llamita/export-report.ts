@@ -1,12 +1,14 @@
 import { assertLiveData, csvText, geojson } from "./downloads";
-import { ranking, type Detection } from "./data";
-import type { ReportConfig } from "./report";
+import { type Detection } from "./data";
+import { exportSheets } from "./export-data";
+import { reportData, type ReportConfig } from "./report";
 
 export async function exportReport(
   config: ReportConfig,
   data: Detection[],
 ): Promise<Blob> {
   assertLiveData(data);
+  data = reportData(config, data);
   if (config.format === "CSV")
     return new Blob([csvText(data)], { type: "text/csv;charset=utf-8" });
   if (config.format === "GeoJSON")
@@ -16,40 +18,22 @@ export async function exportReport(
   if (config.format === "Excel") {
     const XLSX = await import("xlsx");
     const workbook = XLSX.utils.book_new();
-    const rows = data.map((d) => ({
-      Fecha: d.date,
-      "Hora UTC-4": d.time,
-      Municipio: d.municipality,
-      Provincia: d.province,
-      "FRP MW": d.frp,
-      Latitud: d.latitude,
-      Longitud: d.longitude,
-      Sensor: d.satellite,
-      Origen: "NASA FIRMS",
-    }));
-    const sheet = XLSX.utils.json_to_sheet(rows);
-    sheet["!cols"] = [
-      { wch: 12 },
-      { wch: 12 },
-      { wch: 24 },
-      { wch: 20 },
-      { wch: 10 },
-      { wch: 14 },
-      { wch: 14 },
-      { wch: 10 },
-      { wch: 20 },
-    ];
-    XLSX.utils.book_append_sheet(workbook, sheet, "Detecciones");
-    XLSX.utils.book_append_sheet(
-      workbook,
-      XLSX.utils.json_to_sheet(
-        ranking(data, "municipality").map((m) => ({
-          Municipio: m.name,
-          Focos: m.count,
-        })),
-      ),
-      "Municipios",
-    );
+    for (const { name, rows } of exportSheets(data)) {
+      // Excel has 1,048,576 rows per sheet, including the header.
+      for (
+        let offset = 0;
+        offset < Math.max(1, rows.length);
+        offset += 1048575
+      ) {
+        const suffix =
+          rows.length > 1048575 ? ` ${Math.floor(offset / 1048575) + 1}` : "";
+        XLSX.utils.book_append_sheet(
+          workbook,
+          XLSX.utils.json_to_sheet(rows.slice(offset, offset + 1048575)),
+          name + suffix,
+        );
+      }
+    }
     return new Blob(
       [XLSX.write(workbook, { bookType: "xlsx", type: "array" })],
       {

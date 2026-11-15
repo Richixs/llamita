@@ -1,7 +1,8 @@
 "use client";
 import { useApp } from "./app-provider";
 export function DataNotice() {
-  const { loading, error, warnings, reload, progress } = useApp();
+  const { loading, error, warnings, reload, progress, cancel, cancelled } =
+    useApp();
   return (
     <div className="data-notices">
       {loading && (
@@ -9,6 +10,19 @@ export function DataNotice() {
           Consultando detecciones de NASA FIRMS…{" "}
           {progress.total > 1 &&
             `Bloque ${progress.completed} de ${progress.total}`}
+        </p>
+      )}
+      {loading && (
+        <button className="text-link" onClick={cancel}>
+          Cancelar consulta
+        </button>
+      )}
+      {cancelled && (
+        <p className="notice" role="status">
+          Consulta cancelada.{" "}
+          <button className="text-link" onClick={reload}>
+            Reanudar consulta
+          </button>
         </p>
       )}
       {error && (

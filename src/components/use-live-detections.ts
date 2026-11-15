@@ -93,9 +93,11 @@ export function useLiveDetections({
     completed: 0,
     total: 0,
   });
+  const [cancelledKey, setCancelledKey] = useState("");
+  const active = enabled && cancelledKey !== requestKey;
   const validation = livePeriodError(from, to);
   useEffect(() => {
-    if (!enabled || validation) return;
+    if (!active || validation) return;
     const controller = new AbortController();
     const params = new URLSearchParams(query);
     const timer = setTimeout(() => {
@@ -131,15 +133,17 @@ export function useLiveDetections({
       clearTimeout(timer);
       controller.abort();
     };
-  }, [enabled, query, requestKey, validation]);
+  }, [active, query, requestKey, validation]);
   const current = result.key === requestKey;
   return {
     data: enabled && current ? result.value?.data || [] : [],
-    loading: enabled && !validation && !current,
+    loading: active && !validation && !current,
     error: enabled ? validation || (current ? result.error || "" : "") : "",
     warnings: enabled && current ? result.value?.warnings || [] : [],
     fetchedAt: enabled && current ? result.value?.fetchedAt : undefined,
     progress,
+    cancelled: cancelledKey === requestKey,
+    cancel: () => setCancelledKey(requestKey),
     reload: () => setAttempt((a) => a + 1),
   };
 }

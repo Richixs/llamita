@@ -6,3 +6,7 @@ import "./exports.test.ts";
 
 import "./global.test.ts";
 import "./cache.test.ts";
+
+import "./reports.test.ts";
+
+import "./snapshot.test.ts";

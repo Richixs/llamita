@@ -1,4 +1,5 @@
 "use client";
+import { usePathname } from "next/navigation";
 import { createContext, useContext, useState, type ReactNode } from "react";
 import { initialFilters, type Filters } from "@/lib/llamita/filters";
 import { filterDetections, type Detection } from "@/lib/llamita/data";
@@ -10,6 +11,8 @@ interface AppState {
   resetFilters: () => void;
   data: Detection[];
   progress: { completed: number; total: number };
+  cancel: () => void;
+  cancelled: boolean;
   loading: boolean;
   error: string;
   warnings: string[];
@@ -27,6 +30,7 @@ export function AppProvider({
   children: ReactNode;
   today: string;
 }) {
+  const pathname = usePathname();
   const realFilters = { ...initialFilters, from: today, to: today };
   const [filters, setFilters] = useState<Filters>(realFilters);
   const [bbox, setBbox] = useState<Bbox>(WORLD_BBOX);
@@ -37,6 +41,7 @@ export function AppProvider({
     bbox,
     country: filters.country,
     continent: filters.continent,
+    enabled: pathname === "/" || pathname === "/estadisticas",
   });
   return (
     <AppContext.Provider
@@ -47,6 +52,8 @@ export function AppProvider({
         resetFilters: () => setFilters(realFilters),
         data: filterDetections(filters, live.data),
         progress: live.progress,
+        cancel: live.cancel,
+        cancelled: live.cancelled,
         loading: live.loading,
         error: live.error,
         warnings: live.warnings,

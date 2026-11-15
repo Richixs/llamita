@@ -409,3 +409,38 @@
     width: 796px;
   }
 }
+
+.format-code {
+  max-height: 420px;
+  overflow: auto;
+  padding: 16px;
+  border: 1px solid var(--color-borde);
+  background: var(--color-fondo);
+  font: 12px/1.7 var(--font-data);
+  white-space: pre;
+  margin-block: 12px;
+}
+.format-table {
+  max-height: 400px;
+  overflow: auto;
+  margin-block: 12px;
+}
+.format-map {
+  width: 100%;
+  height: auto;
+  margin-block: 12px;
+  border: 1px solid var(--color-borde);
+}
+.preview-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-block: 16px;
+}
+.pdf-page > .ranking-chart {
+  margin-block: 16px 24px;
+}
+.pdf-page > .ranking-chart .ranking-row {
+  font-size: 12px;
+  min-height: 26px;
+}

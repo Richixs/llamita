@@ -1,15 +1,15 @@
+import { scopeLabel } from "@/lib/geo/scope";
+import { reportPlan } from "./report-model";
 import { filterDetections, type Detection } from "./data";
 import { WORLD_BBOX, type Bbox } from "@/lib/geo/catalog";
 import { initialFilters, periodError, type Filters } from "./filters";
 export type ReportFormat = "PDF" | "Excel" | "CSV" | "Shapefile" | "GeoJSON";
-export type ReportSection =
-  "summary" | "map" | "daily" | "ranking" | "protected" | "table";
+export type ReportSection = "summary" | "map" | "daily" | "ranking" | "table";
 export const sectionLabels: Record<ReportSection, string> = {
   summary: "Resumen con cifras clave",
   map: "Mapa de focos",
   daily: "Gráfico de focos por día",
   ranking: "Rankings por país y sensor",
-  protected: "Focos en áreas protegidas",
   table: "Tabla con todas las detecciones",
 };
 export type AreaType =
@@ -19,6 +19,7 @@ export interface ReportConfig {
   bbox?: Bbox;
   country?: string;
   continent?: string;
+  local?: boolean;
   warnings?: string[];
   areaType: AreaType;
   areas: string[];
@@ -46,7 +47,7 @@ export const defaultReport: ReportConfig = {
   mode: "range",
   from: "",
   to: "",
-  sections: ["summary", "map", "daily", "ranking", "protected"],
+  sections: ["summary", "map", "daily", "ranking"],
   format: "PDF",
   satellite: "all",
 };
@@ -67,9 +68,18 @@ export function reportData(
     },
     source,
   );
-  if (config.areaType === "all") return data;
+  const bounded = config.bbox
+    ? data.filter(
+        (d) =>
+          d.longitude >= config.bbox![0] &&
+          d.longitude <= config.bbox![2] &&
+          d.latitude >= config.bbox![1] &&
+          d.latitude <= config.bbox![3],
+      )
+    : data;
+  if (config.areaType === "all") return bounded;
   const key = config.areaType;
-  return data.filter((d) => config.areas.includes(d[key]));
+  return bounded.filter((d) => config.areas.includes(d[key]));
 }
 export function validateReport(config: ReportConfig, source: Detection[]) {
   const error = periodError(
@@ -177,14 +187,7 @@ export function readSavedReports(raw: string | null): SavedReport[] {
   }
 }
 export function reportPages(config: ReportConfig, data: Detection[]) {
-  return (
-    1 +
-    (config.origin === "live"
-      ? Math.ceil((config.warnings?.length || 0) / 8)
-      : 0) +
-    (config.sections.includes("protected") ? 1 : 0) +
-    (config.sections.includes("table") ? Math.ceil(data.length / 28) : 0)
-  );
+  return reportPlan(config, data).length;
 }
 
 export function liveConfig(
@@ -197,8 +200,9 @@ export function liveConfig(
     bbox,
     country: filters.country,
     continent: filters.continent,
+    local: filters.local,
     sourceFilters: undefined,
-    sections: ["summary", "map", "daily"],
+    sections: ["summary", "map", "daily", "ranking"],
   };
 }
 export function storeReports(reports: SavedReport[]) {
@@ -206,4 +210,15 @@ export function storeReports(reports: SavedReport[]) {
     REPORT_STORAGE_KEY,
     JSON.stringify(reports.slice(0, 20)),
   );
+}
+
+export function reportFilename(config: ReportConfig, extension: string) {
+  const scope = scopeLabel(config)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+  const from = config.mode === "day" ? config.to : config.from;
+  return `llamita-${scope}-${from}${from === config.to ? "" : `_${config.to}`}.${extension}`;
 }

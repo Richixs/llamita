@@ -2,6 +2,7 @@ export interface Filters {
   mode: "day" | "range";
   from: string;
   to: string;
+  local?: boolean;
   continent?: string;
   country?: string;
   province: string;
@@ -16,6 +17,7 @@ export const initialFilters: Filters = {
   to: "",
   country: "",
   continent: "",
+  local: false,
   province: "",
   municipality: "",
   territory: "",

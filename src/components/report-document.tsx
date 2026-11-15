@@ -8,6 +8,7 @@ export function ReportDocument(props: {
   data: Detection[];
   generatedAt: string;
   preview?: boolean;
+  previewPage?: number;
 }) {
   return <LiveReportDocument {...props} />;
 }
