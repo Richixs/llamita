@@ -1,0 +1,12 @@
+# Dependencies
+node_modules
+
+# Build output and caches
+.next
+out
+build
+coverage
+
+# Local and generated files
+.vercel
+*.tsbuildinfo
