@@ -22,7 +22,7 @@ export function csvText(data: Detection[]) {
     d.latitude,
     d.longitude,
     d.satellite,
-    "DATOS DE EJEMPLO",
+    d.origin === "live" ? "NASA FIRMS" : "DATOS DE EJEMPLO",
   ]);
   return (
     "\uFEFF" +
@@ -47,7 +47,9 @@ export function csvText(data: Detection[]) {
 export function downloadCsv(data: Detection[]) {
   saveBlob(
     new Blob([csvText(data)], { type: "text/csv;charset=utf-8" }),
-    "llamita-focos-ejemplo.csv",
+    data.some((d) => d.origin === "live")
+      ? "llamita-focos-firms.csv"
+      : "llamita-focos-ejemplo.csv",
   );
 }
 export function geojson(data: Detection[]) {
@@ -66,7 +68,9 @@ export function geojson(data: Detection[]) {
         hora: d.time,
         frp_mw: d.frp,
         sensor: d.satellite,
-        ejemplo: true,
+        ejemplo: d.origin !== "live",
+        fuente: d.origin === "live" ? "NASA FIRMS" : "Datos de ejemplo",
+        producto: d.source || "demo",
       },
     })),
   };
