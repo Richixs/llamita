@@ -23,7 +23,8 @@ export const GAMC_LAYERS = [
   },
 ] as const;
 export type GamcLayerId = (typeof GAMC_LAYERS)[number]["id"];
-export const MAX_QUERY_DAYS = 365;
+// 366, not 365, so a full calendar year still fits in a leap year.
+export const MAX_QUERY_DAYS = 366;
 export function boliviaToday() {
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/La_Paz",
