@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-:root {
+@theme {
   /* 60% — Base / Surface */
   --color-background: #FAF7F2;
   --color-surface: #FFFFFF;
@@ -43,7 +43,7 @@
   --color-map-border: #D6CFC5;
   --color-map-label: #5E534B;
 
-  /* Radii and Spacing */
+  /* Corners */
   --radius-sm: 4px;
   --radius-md: 8px;
   --radius-lg: 12px;
@@ -51,56 +51,8 @@
 }
 
 @theme inline {
-  /* Typography connected to next/font */
+  /* Typography connected to next/font variables on <html> */
   --font-display: var(--font-display), "Space Grotesk", system-ui, sans-serif;
   --font-sans: var(--font-sans), "IBM Plex Sans", system-ui, sans-serif;
   --font-mono: var(--font-mono), "IBM Plex Mono", monospace;
-
-  /* Base Colors (60%) */
-  --color-background: var(--color-background);
-  --color-surface: var(--color-surface);
-  --color-surface-2: var(--color-surface-2);
-  --color-border: var(--color-border);
-
-  /* Charcoal and Text (30%) */
-  --color-charcoal: var(--color-charcoal);
-  --color-ink: var(--color-ink);
-  --color-ink-muted: var(--color-ink-muted);
-  --color-ink-faint: var(--color-ink-faint);
-  --color-smoke: var(--color-smoke);
-
-  /* Fire / Accent (10%) */
-  --color-fire: var(--color-fire);
-  --color-fire-hover: var(--color-fire-hover);
-  --color-fire-active: var(--color-fire-active);
-  --color-fire-soft: var(--color-fire-soft);
-
-  /* Status */
-  --color-ok: var(--color-ok);
-  --color-ok-soft: var(--color-ok-soft);
-  --color-warning: var(--color-warning);
-  --color-warning-soft: var(--color-warning-soft);
-  --color-danger: var(--color-danger);
-  --color-danger-soft: var(--color-danger-soft);
-  --color-info: var(--color-info);
-  --color-info-soft: var(--color-info-soft);
-
-  /* Heat scale */
-  --color-heat-1: var(--color-heat-1);
-  --color-heat-2: var(--color-heat-2);
-  --color-heat-3: var(--color-heat-3);
-  --color-heat-4: var(--color-heat-4);
-  --color-heat-5: var(--color-heat-5);
-
-  /* Base Map */
-  --color-map-land: var(--color-map-land);
-  --color-map-water: var(--color-map-water);
-  --color-map-border: var(--color-map-border);
-  --color-map-label: var(--color-map-label);
-
-  /* Corners */
-  --radius-sm: var(--radius-sm);
-  --radius-md: var(--radius-md);
-  --radius-lg: var(--radius-lg);
-  --radius-full: var(--radius-full);
 }
