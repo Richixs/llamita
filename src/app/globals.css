@@ -1,26 +1,106 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* 60% — Base / Surface */
+  --color-background: #FAF7F2;
+  --color-surface: #FFFFFF;
+  --color-surface-2: #F2ECE4;
+  --color-border: #DDD5CA;
+
+  /* 30% — Charcoal / Structure and Text */
+  --color-charcoal: #1C1613;
+  --color-ink: #261F1B;
+  --color-ink-muted: #665C54;
+  --color-ink-faint: #B8AEA4;
+  --color-smoke: #F5F0EA;
+
+  /* 10% — Fire / Action and Accent */
+  --color-fire: #E05A2B;
+  --color-fire-hover: #C4471C;
+  --color-fire-active: #A33914;
+  --color-fire-soft: #FCECE6;
+
+  /* Status */
+  --color-ok: #1D7A4C;
+  --color-ok-soft: #E3F5EC;
+  --color-warning: #945800;
+  --color-warning-soft: #FDF3DF;
+  --color-danger: #B8291A;
+  --color-danger-soft: #FCE6E3;
+  --color-info: #226699;
+  --color-info-soft: #E3F0FA;
+
+  /* Heat scale — Hotspot intensity */
+  --color-heat-1: #FCE19C;
+  --color-heat-2: #F7AD3B;
+  --color-heat-3: #E05A2B;
+  --color-heat-4: #C42B1C;
+  --color-heat-5: #781713;
+
+  /* Base Map */
+  --color-map-land: #EDE8E1;
+  --color-map-water: #F5F2ED;
+  --color-map-border: #D6CFC5;
+  --color-map-label: #5E534B;
+
+  /* Radii and Spacing */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-full: 9999px;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  /* Typography connected to next/font */
+  --font-display: var(--font-display), "Space Grotesk", system-ui, sans-serif;
+  --font-sans: var(--font-sans), "IBM Plex Sans", system-ui, sans-serif;
+  --font-mono: var(--font-mono), "IBM Plex Mono", monospace;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+  /* Base Colors (60%) */
+  --color-background: var(--color-background);
+  --color-surface: var(--color-surface);
+  --color-surface-2: var(--color-surface-2);
+  --color-border: var(--color-border);
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  /* Charcoal and Text (30%) */
+  --color-charcoal: var(--color-charcoal);
+  --color-ink: var(--color-ink);
+  --color-ink-muted: var(--color-ink-muted);
+  --color-ink-faint: var(--color-ink-faint);
+  --color-smoke: var(--color-smoke);
+
+  /* Fire / Accent (10%) */
+  --color-fire: var(--color-fire);
+  --color-fire-hover: var(--color-fire-hover);
+  --color-fire-active: var(--color-fire-active);
+  --color-fire-soft: var(--color-fire-soft);
+
+  /* Status */
+  --color-ok: var(--color-ok);
+  --color-ok-soft: var(--color-ok-soft);
+  --color-warning: var(--color-warning);
+  --color-warning-soft: var(--color-warning-soft);
+  --color-danger: var(--color-danger);
+  --color-danger-soft: var(--color-danger-soft);
+  --color-info: var(--color-info);
+  --color-info-soft: var(--color-info-soft);
+
+  /* Heat scale */
+  --color-heat-1: var(--color-heat-1);
+  --color-heat-2: var(--color-heat-2);
+  --color-heat-3: var(--color-heat-3);
+  --color-heat-4: var(--color-heat-4);
+  --color-heat-5: var(--color-heat-5);
+
+  /* Base Map */
+  --color-map-land: var(--color-map-land);
+  --color-map-water: var(--color-map-water);
+  --color-map-border: var(--color-map-border);
+  --color-map-label: var(--color-map-label);
+
+  /* Corners */
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-full: var(--radius-full);
 }
