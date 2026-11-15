@@ -32,6 +32,7 @@ jobs:
     outputs:
       overlay: ${{ steps.set-vars.outputs.overlay }}
       gh_env: ${{ steps.set-vars.outputs.gh_env }}
+      app_url: ${{ steps.set-vars.outputs.app_url }}
       tag: ${{ steps.set-vars.outputs.tag }}
       image: ${{ steps.set-vars.outputs.image }}
     steps:
@@ -41,10 +42,12 @@ jobs:
           if [ "${{ github.ref_name }}" = "main" ]; then
             echo "overlay=prod" >> "$GITHUB_OUTPUT"
             echo "gh_env=production" >> "$GITHUB_OUTPUT"
+            echo "app_url=https://llamita.richixs.dev" >> "$GITHUB_OUTPUT"
             echo "tag=prod-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
           else
             echo "overlay=dev" >> "$GITHUB_OUTPUT"
             echo "gh_env=development" >> "$GITHUB_OUTPUT"
+            echo "app_url=https://dev.llamita.richixs.dev" >> "$GITHUB_OUTPUT"
             echo "tag=dev-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
           fi
           echo "image=$(echo '${{ env.IMAGE_NAME }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
@@ -53,7 +56,6 @@ jobs:
     name: Build & Push Image (${{ needs.setup-env.outputs.overlay }})
     needs: setup-env
     runs-on: ubuntu-latest
-    environment: ${{ needs.setup-env.outputs.gh_env }}
     permissions:
       contents: read
       packages: write
@@ -88,7 +90,9 @@ jobs:
     name: Update GitOps Manifests (${{ needs.setup-env.outputs.overlay }})
     needs: [setup-env, build-and-push]
     runs-on: ubuntu-latest
-    environment: ${{ needs.setup-env.outputs.gh_env }}
+    environment:
+      name: ${{ needs.setup-env.outputs.gh_env }}
+      url: ${{ needs.setup-env.outputs.app_url }}
     env:
       OVERLAY: ${{ needs.setup-env.outputs.overlay }}
       IMAGE_URI: ghcr.io/${{ needs.setup-env.outputs.image }}:${{ needs.setup-env.outputs.tag }}
