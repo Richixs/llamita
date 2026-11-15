@@ -2,6 +2,7 @@
 import { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { MapCanvas } from "@/lib/map/canvas-renderer";
 import { GAMC_LAYERS, type Bbox, type GamcLayerId } from "@/lib/geo/catalog";
 import { heatColor, type Detection } from "@/lib/llamita/data";
 export interface MapApi {
@@ -52,7 +53,7 @@ export default function GeographicMap({
     if (!container.current) return;
     const map = L.map(container.current, {
       zoomControl: false,
-      preferCanvas: true,
+      renderer: new MapCanvas(),
       maxZoom: 19,
       minZoom: 1,
       center: [15, 0],
@@ -83,13 +84,21 @@ export default function GeographicMap({
       zoomIn: () => map.zoomIn(),
       zoomOut: () => map.zoomOut(),
     };
-    const observer = new ResizeObserver(() => map.invalidateSize());
+    let disposed = false;
+    const observer = new ResizeObserver(() => {
+      if (!disposed) map.invalidateSize();
+    });
     observer.observe(container.current);
     return () => {
+      disposed = true;
       observer.disconnect();
-      map.remove();
       mapRef.current = null;
       apiRef.current = null;
+      // Remove paths while their renderer and context are still available.
+      map.eachLayer((layer) => {
+        if (layer instanceof L.Path) map.removeLayer(layer);
+      });
+      map.remove();
     };
     // The map is created once. Subsequent changes update layers below.
   }, [apiRef]);
