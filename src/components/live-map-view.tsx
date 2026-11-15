@@ -8,14 +8,12 @@ import { DataNotice } from "./data-mode-control";
 import { Icon } from "./icon";
 import {
   WORLD_BBOX,
-  GAMC_BBOX,
   GAMC_LAYERS,
   MAX_QUERY_DAYS,
-  REGIONAL_BBOX,
   type GamcLayerId,
 } from "@/lib/geo/catalog";
 import { dateOffset, number, periodLabel } from "@/lib/llamita/filters";
-import countries from "@/lib/geo/country-catalog.json";
+import { GeographicScopeControl } from "./geographic-scope-control";
 import { boundaryBbox } from "@/lib/geo/geojson-bbox";
 import {
   COCHABAMBA_MUNICIPALITIES,
@@ -34,15 +32,6 @@ const GeographicMap = dynamic(() => import("./geographic-map"), {
     </div>
   ),
 });
-function continentBbox(continent: string): [number, number, number, number] {
-  const members = countries.filter((c) => c.continent === continent);
-  return [
-    Math.min(...members.map((c) => c.bbox[0])),
-    Math.min(...members.map((c) => c.bbox[1])),
-    Math.max(...members.map((c) => c.bbox[2])),
-    Math.max(...members.map((c) => c.bbox[3])),
-  ];
-}
 export function LiveMapView({ initialFocus = "" }: { initialFocus?: string }) {
   const {
     filters,
@@ -143,6 +132,9 @@ export function LiveMapView({ initialFocus = "" }: { initialFocus?: string }) {
             className="text-link"
             onClick={() => {
               resetFilters();
+              setActiveLayers([]);
+              setFeatures(null);
+              setLayerErrors([]);
               setPoint(null);
               setBbox(WORLD_BBOX);
             }}
@@ -223,85 +215,25 @@ export function LiveMapView({ initialFocus = "" }: { initialFocus?: string }) {
         </section>
         <section className="filter-group">
           <h2 className="overline">Área de consulta</h2>
-          <label className="field">
-            Continente
-            <select
-              aria-label="Continente"
-              value={filters.continent || ""}
-              onChange={(e) => {
-                const continent = e.target.value;
-                const members = countries.filter(
-                  (c) => c.continent === continent,
-                );
-                updateFilters({
-                  continent,
-                  country: "",
-                  province: "",
-                  municipality: "",
-                });
-                setBbox(
-                  continent
-                    ? [
-                        Math.min(...members.map((c) => c.bbox[0])),
-                        Math.min(...members.map((c) => c.bbox[1])),
-                        Math.max(...members.map((c) => c.bbox[2])),
-                        Math.max(...members.map((c) => c.bbox[3])),
-                      ]
-                    : WORLD_BBOX,
-                );
-                setPoint(null);
-              }}
-            >
-              <option value="">Todo el mundo</option>
-              {[...new Set(countries.map((c) => c.continent))]
-                .sort()
-                .map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-            </select>
-          </label>
-          <label className="field">
-            País o territorio
-            <select
-              aria-label="País o territorio"
-              value={filters.country || ""}
-              onChange={(e) => {
-                const selected = countries.find(
-                  (c) => c.code === e.target.value,
-                );
-                updateFilters({
-                  country: e.target.value,
-                  continent: selected?.continent || filters.continent,
-                  province: "",
-                  municipality: "",
-                });
-                setBbox(
-                  selected
-                    ? (selected.bbox as [number, number, number, number])
-                    : filters.continent
-                      ? continentBbox(filters.continent)
-                      : WORLD_BBOX,
-                );
-                setPoint(null);
-              }}
-            >
-              <option value="">
-                {filters.continent ? "Todo el continente" : "Todos los países"}
-              </option>
-              {countries
-                .filter(
-                  (c) =>
-                    !filters.continent || c.continent === filters.continent,
-                )
-                .map((c) => (
-                  <option key={c.code} value={c.code}>
-                    {c.name}
-                  </option>
-                ))}
-            </select>
-          </label>
+          <GeographicScopeControl
+            continent={filters.continent}
+            country={filters.country}
+            local={filters.local}
+            onChange={({ continent, country, bbox, local }) => {
+              updateFilters({
+                continent,
+                country,
+                local,
+                province: "",
+                municipality: "",
+              });
+              setActiveLayers([]);
+              setFeatures(null);
+              setLayerErrors([]);
+              setBbox(bbox);
+              setPoint(null);
+            }}
+          />
           <p className="text-caption muted">
             {filters.country
               ? "Consulta recortada al país seleccionado."
@@ -323,22 +255,7 @@ export function LiveMapView({ initialFocus = "" }: { initialFocus?: string }) {
             Mueve el mapa y consulta la vista para explorar cualquier región del
             mundo.
           </p>
-          <details>
-            <summary>Reto local · Cochabamba</summary>
-            <button
-              className="btn"
-              onClick={() => {
-                updateFilters({
-                  country: "BOL",
-                  continent: "América del Sur",
-                  province: "",
-                  municipality: "",
-                });
-                setBbox(REGIONAL_BBOX);
-              }}
-            >
-              Consultar Cochabamba
-            </button>
+          {filters.local && (
             <fieldset className="unavailable-filters">
               <legend className="overline">Cochabamba · reto local</legend>
               <label className="field">
@@ -397,8 +314,8 @@ export function LiveMapView({ initialFocus = "" }: { initialFocus?: string }) {
                 TCO / áreas protegidas
                 <input placeholder="Fuente pendiente" disabled />
               </label>
-            </fieldset>{" "}
-          </details>
+            </fieldset>
+          )}
         </section>
         <section className="filter-group">
           <h2 className="overline">Satélite</h2>
@@ -500,7 +417,7 @@ export function LiveMapView({ initialFocus = "" }: { initialFocus?: string }) {
         {layersOpen && (
           <section
             className="layers-panel live-layers"
-            aria-label="Capas autorizadas GAMC"
+            aria-label="Capas del mapa"
             onKeyDown={(e) => {
               if (e.key === "Escape") setLayersOpen(false);
             }}
@@ -541,55 +458,59 @@ export function LiveMapView({ initialFocus = "" }: { initialFocus?: string }) {
               />
               <span className="switch" aria-hidden />
             </label>
-            <h3 className="overline">
-              Reto local · servicios municipales GAMC
-            </h3>
-            {GAMC_LAYERS.map((layer) => (
-              <div className="municipal-layer" key={layer.id}>
-                <label className="layer-toggle">
-                  {layer.name}
-                  <input
-                    type="checkbox"
-                    role="switch"
-                    checked={activeLayers.includes(layer.id)}
-                    onChange={(e) => {
-                      setActiveLayers((ids) =>
-                        e.target.checked
-                          ? [...ids, layer.id]
-                          : ids.filter((id) => id !== layer.id),
-                      );
-                      setLayerErrors((errors) =>
-                        errors.filter((name) => name !== layer.name),
-                      );
-                      setFeatures(null);
-                    }}
-                  />
-                  <span className="switch" aria-hidden />
-                </label>
-                <button
-                  className="text-link text-caption"
-                  onClick={() => apiRef.current?.fit(layer.bbox)}
-                >
-                  <Icon name="target" />
-                  Ver cobertura
-                </button>
-                {activeLayers.includes(layer.id) && (
-                  <Image
-                    width={240}
-                    height={180}
-                    unoptimized
-                    className="wms-legend"
-                    src={`/api/gamc/wms?layer=${layer.id}&REQUEST=GetLegendGraphic&VERSION=1.0.0`}
-                    alt={`Leyenda de ${layer.name}`}
-                    onError={() => onLayerError(layer.name)}
-                  />
-                )}
-              </div>
-            ))}
-            <p className="text-caption muted">
-              Activa una capa y haz clic en el mapa para consultar sus
-              atributos. Los estilos se conservan tal como los publica GAMC.
-            </p>
+            {filters.local && (
+              <>
+                <h3 className="overline">
+                  Reto local · servicios municipales GAMC
+                </h3>
+                {GAMC_LAYERS.map((layer) => (
+                  <div className="municipal-layer" key={layer.id}>
+                    <label className="layer-toggle">
+                      {layer.name}
+                      <input
+                        type="checkbox"
+                        role="switch"
+                        checked={activeLayers.includes(layer.id)}
+                        onChange={(e) => {
+                          setActiveLayers((ids) =>
+                            e.target.checked
+                              ? [...ids, layer.id]
+                              : ids.filter((id) => id !== layer.id),
+                          );
+                          setLayerErrors((errors) =>
+                            errors.filter((name) => name !== layer.name),
+                          );
+                          setFeatures(null);
+                        }}
+                      />
+                      <span className="switch" aria-hidden />
+                    </label>
+                    <button
+                      className="text-link text-caption"
+                      onClick={() => apiRef.current?.fit(layer.bbox)}
+                    >
+                      <Icon name="target" />
+                      Ver cobertura
+                    </button>
+                    {activeLayers.includes(layer.id) && (
+                      <Image
+                        width={240}
+                        height={180}
+                        unoptimized
+                        className="wms-legend"
+                        src={`/api/gamc/wms?layer=${layer.id}&REQUEST=GetLegendGraphic&VERSION=1.0.0`}
+                        alt={`Leyenda de ${layer.name}`}
+                        onError={() => onLayerError(layer.name)}
+                      />
+                    )}
+                  </div>
+                ))}
+                <p className="text-caption muted">
+                  Activa una capa y haz clic en el mapa para consultar sus
+                  atributos. Los estilos se conservan tal como los publica GAMC.
+                </p>
+              </>
+            )}
             {layerErrors.length > 0 && (
               <p role="alert" className="text-caption form-error">
                 No se pudo cargar: {layerErrors.join(", ")}. Comprueba la
