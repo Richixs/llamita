@@ -9,6 +9,7 @@ import { Icon } from "./icon";
 import {
   GAMC_BBOX,
   GAMC_LAYERS,
+  MAX_QUERY_DAYS,
   REGIONAL_BBOX,
   type GamcLayerId,
 } from "@/lib/geo/catalog";
@@ -35,6 +36,7 @@ export function LiveMapView({ initialFocus = "" }: { initialFocus?: string }) {
     filters,
     updateFilters,
     resetFilters,
+    mode,
     data,
     loading,
     error,
@@ -82,6 +84,9 @@ export function LiveMapView({ initialFocus = "" }: { initialFocus?: string }) {
         current.includes(name) ? current : [...current, name],
       ),
     [],
+  );
+  const rangeDays = Math.round(
+    (Date.parse(filters.to) - Date.parse(filters.from)) / 86400000,
   );
   const selectedPoint =
     point && data.some((d) => d.id === point.id)
@@ -186,9 +191,15 @@ export function LiveMapView({ initialFocus = "" }: { initialFocus?: string }) {
             ))}
           </div>
           <p className="text-caption muted">
-            Hasta 31 días por consulta. La disponibilidad depende del producto
-            de NASA.
+            Hasta {MAX_QUERY_DAYS} días por consulta. La disponibilidad
+            depende del producto de NASA.
           </p>
+          {mode === "live" && rangeDays > 60 && (
+            <p className="text-caption muted" role="status">
+              Rango amplio ({number(rangeDays)} días): la consulta puede
+              tardar varios segundos.
+            </p>
+          )}
         </section>
         <section className="filter-group">
           <h2 className="overline">Área de consulta</h2>
