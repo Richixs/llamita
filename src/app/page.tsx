@@ -1,15 +1,12 @@
+import { Logo } from "@/components/ui/logo";
+
 export default function Home() {
   return (
     <div className="bg-background text-ink flex flex-1 flex-col">
       {/* Top Navbar (30% Charcoal structure) */}
       <header className="bg-charcoal text-smoke border-border/10 border-b px-6 py-4">
         <div className="mx-auto flex max-w-6xl items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="bg-fire inline-block h-3.5 w-3.5 rounded-full" />
-            <span className="font-display text-xl font-bold tracking-tight">
-              llamita
-            </span>
-          </div>
+          <Logo theme="dark" />
           <span className="bg-fire-soft text-fire font-mono rounded-full px-3 py-1 text-xs font-medium">
             NASA FIRMS · LIVE
           </span>
@@ -19,9 +16,12 @@ export default function Home() {
       {/* Main Content (60% Base / Surface) */}
       <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col justify-center gap-10 px-6 py-16">
         <section className="flex flex-col gap-4">
-          <span className="text-fire font-mono text-xs font-semibold tracking-widest uppercase">
-            Sistema de Monitoreo Satelital
-          </span>
+          <div className="flex items-center gap-2">
+            <Logo variant="mark" markClassName="h-5 w-auto" />
+            <span className="text-fire font-mono text-xs font-semibold tracking-widest uppercase">
+              Sistema de Monitoreo Satelital
+            </span>
+          </div>
           <h1 className="font-display text-ink max-w-2xl text-4xl font-bold tracking-tight sm:text-5xl">
             Vigilar el fuego en tiempo real
           </h1>
