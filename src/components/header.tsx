@@ -51,6 +51,16 @@ export function Header() {
         >
           <Icon name="help" />
         </Link>
+        <a
+          href="https://github.com/Richixs/llamita"
+          className="icon-btn"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Código fuente en GitHub (se abre en una pestaña nueva)"
+          title="Código fuente en GitHub"
+        >
+          <Icon name="github" />
+        </a>
         <Link
           href="/reportes"
           className="btn btn-primary"
