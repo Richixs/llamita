@@ -2,7 +2,7 @@
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useApp } from "./app-provider";
 import { DataModeControl, DataNotice } from "./data-mode-control";
 import { Icon } from "./icon";
@@ -50,8 +50,31 @@ export function LiveMapView({ initialFocus = "" }: { initialFocus?: string }) {
   const [dismissedFocus, setDismissedFocus] = useState(false);
   const [features, setFeatures] = useState<FeatureInfo[] | null>(null);
   const [layerErrors, setLayerErrors] = useState<string[]>([]);
+  const [selectedBoundary, setSelectedBoundary] =
+    useState<GeoJSON.Feature<GeoJSON.Polygon | GeoJSON.MultiPolygon> | null>(null);
   const apiRef = useRef<MapApi | null>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const type = filters.municipality ? "municipality" : filters.province ? "province" : null;
+    const name = filters.municipality || filters.province;
+    const controller = new AbortController();
+    (async () => {
+      if (!type || !name) {
+        setSelectedBoundary(null);
+        return;
+      }
+      try {
+        const res = await fetch(
+          `/api/geo/boundary?type=${type}&name=${encodeURIComponent(name)}`,
+          { signal: controller.signal },
+        );
+        setSelectedBoundary(res.ok ? await res.json() : null);
+      } catch {
+        if (!controller.signal.aborted) setSelectedBoundary(null);
+      }
+    })();
+    return () => controller.abort();
+  }, [filters.province, filters.municipality]);
   const onLayerError = useCallback(
     (name: string) =>
       setLayerErrors((current) =>
@@ -279,6 +302,7 @@ export function LiveMapView({ initialFocus = "" }: { initialFocus?: string }) {
           onFeatures={setFeatures}
           onLayerError={onLayerError}
           apiRef={apiRef}
+          selectedBoundary={selectedBoundary}
         />
         <div className="map-summary">
           <Icon name="flame" />
