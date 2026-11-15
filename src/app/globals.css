@@ -2,46 +2,46 @@
 
 @theme {
   /* 60% — Base / Surface */
-  --color-background: #FAF7F2;
-  --color-surface: #FFFFFF;
-  --color-surface-2: #F2ECE4;
-  --color-border: #DDD5CA;
+  --color-background: #faf7f2;
+  --color-surface: #ffffff;
+  --color-surface-2: #f2ece4;
+  --color-border: #ddd5ca;
 
   /* 30% — Charcoal / Structure and Text */
-  --color-charcoal: #1C1613;
-  --color-ink: #261F1B;
-  --color-ink-muted: #665C54;
-  --color-ink-faint: #B8AEA4;
-  --color-smoke: #F5F0EA;
+  --color-charcoal: #1c1613;
+  --color-ink: #261f1b;
+  --color-ink-muted: #665c54;
+  --color-ink-faint: #b8aea4;
+  --color-smoke: #f5f0ea;
 
   /* 10% — Fire / Action and Accent */
-  --color-fire: #E05A2B;
-  --color-fire-hover: #C4471C;
-  --color-fire-active: #A33914;
-  --color-fire-soft: #FCECE6;
+  --color-fire: #e05a2b;
+  --color-fire-hover: #c4471c;
+  --color-fire-active: #a33914;
+  --color-fire-soft: #fcece6;
 
   /* Status */
-  --color-ok: #1D7A4C;
-  --color-ok-soft: #E3F5EC;
+  --color-ok: #1d7a4c;
+  --color-ok-soft: #e3f5ec;
   --color-warning: #945800;
-  --color-warning-soft: #FDF3DF;
-  --color-danger: #B8291A;
-  --color-danger-soft: #FCE6E3;
+  --color-warning-soft: #fdf3df;
+  --color-danger: #b8291a;
+  --color-danger-soft: #fce6e3;
   --color-info: #226699;
-  --color-info-soft: #E3F0FA;
+  --color-info-soft: #e3f0fa;
 
   /* Heat scale — Hotspot intensity */
-  --color-heat-1: #FCE19C;
-  --color-heat-2: #F7AD3B;
-  --color-heat-3: #E05A2B;
-  --color-heat-4: #C42B1C;
+  --color-heat-1: #fce19c;
+  --color-heat-2: #f7ad3b;
+  --color-heat-3: #e05a2b;
+  --color-heat-4: #c42b1c;
   --color-heat-5: #781713;
 
   /* Base Map */
-  --color-map-land: #EDE8E1;
-  --color-map-water: #F5F2ED;
-  --color-map-border: #D6CFC5;
-  --color-map-label: #5E534B;
+  --color-map-land: #ede8e1;
+  --color-map-water: #f5f2ed;
+  --color-map-border: #d6cfc5;
+  --color-map-label: #5e534b;
 
   /* Corners */
   --radius-sm: 4px;
