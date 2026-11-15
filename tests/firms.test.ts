@@ -54,7 +54,7 @@ test("UTC observations cross Bolivia midnight correctly", () => {
   assert.equal(d.time, "22:14");
   assert.equal(d.latitude, -17);
   assert.equal(d.origin, "live");
-  assert.equal(d.municipality, "Sin asignar");
+  assert.equal(d.municipality, "Villa Tunari");
 });
 test("country endpoints fail clearly without calling unavailable NASA services", async () => {
   await assert.rejects(getCountries(), /deshabilitado/);
