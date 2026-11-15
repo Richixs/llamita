@@ -16,6 +16,7 @@ import { dateOffset, number, periodLabel } from "@/lib/llamita/filters";
 import {
   COCHABAMBA_MUNICIPALITIES,
   COCHABAMBA_PROVINCES,
+  MUNICIPALITIES_BY_PROVINCE,
 } from "@/lib/geo/names";
 import type { Detection } from "@/lib/llamita/data";
 import type { FeatureInfo, MapApi } from "./geographic-map";
@@ -238,7 +239,18 @@ export function LiveMapView({ initialFocus = "" }: { initialFocus?: string }) {
               <select
                 aria-label="Filtrar por provincia"
                 value={filters.province}
-                onChange={(e) => updateFilters({ province: e.target.value })}
+                onChange={(e) => {
+                  const province = e.target.value;
+                  const allowed = province
+                    ? (MUNICIPALITIES_BY_PROVINCE[province] ?? [])
+                    : COCHABAMBA_MUNICIPALITIES;
+                  updateFilters({
+                    province,
+                    municipality: allowed.includes(filters.municipality)
+                      ? filters.municipality
+                      : "",
+                  });
+                }}
               >
                 <option value="">Todas</option>
                 {COCHABAMBA_PROVINCES.map((name) => (
@@ -256,7 +268,10 @@ export function LiveMapView({ initialFocus = "" }: { initialFocus?: string }) {
                 onChange={(e) => updateFilters({ municipality: e.target.value })}
               >
                 <option value="">Todos</option>
-                {COCHABAMBA_MUNICIPALITIES.map((name) => (
+                {(filters.province
+                  ? (MUNICIPALITIES_BY_PROVINCE[filters.province] ?? [])
+                  : COCHABAMBA_MUNICIPALITIES
+                ).map((name) => (
                   <option key={name} value={name}>
                     {name}
                   </option>
