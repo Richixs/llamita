@@ -2,6 +2,7 @@ import type { Filters } from "./filters";
 export interface Detection {
   origin?: "live";
   source?: string;
+  continent?: string;
   country?: string;
   countryCode?: string;
   id: string;
@@ -33,6 +34,7 @@ export function filterDetections(filters: Filters, source: Detection[]) {
     (d) =>
       d.date >= from &&
       d.date <= filters.to &&
+      (!filters.continent || d.continent === filters.continent) &&
       (!filters.country || d.countryCode === filters.country) &&
       (!filters.province || d.province === filters.province) &&
       (!filters.municipality || d.municipality === filters.municipality) &&

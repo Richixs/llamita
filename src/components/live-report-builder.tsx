@@ -41,6 +41,7 @@ export function LiveReportBuilder() {
     sensor: config.satellite,
     bbox: config.bbox || WORLD_BBOX,
     country: config.country,
+    continent: config.continent,
   });
   useEffect(() => {
     function load() {
@@ -91,7 +92,7 @@ export function LiveReportBuilder() {
         c.satellite,
         c.bbox || WORLD_BBOX,
         undefined,
-        { country: c.country },
+        { country: c.country, continent: c.continent },
       );
       const validation = validateReport(c, result.data);
       if (validation) throw new Error(validation);

@@ -12,6 +12,7 @@ export async function fetchLiveDetections(
   bbox: Bbox,
   signal?: AbortSignal,
   options: {
+    continent?: string;
     country?: string;
     onProgress?: (progress: QueryProgress) => void;
   } = {},
@@ -28,6 +29,7 @@ export async function fetchLiveDetections(
       sensor,
       bbox: bbox.join(","),
     });
+    if (options.continent) params.set("continent", options.continent);
     if (options.country) params.set("country", options.country);
     const response = await fetch(`/api/firms/hotspots?${params}`, {
       signal,
@@ -61,6 +63,7 @@ export function useLiveDetections({
   sensor,
   bbox,
   country,
+  continent,
   enabled = true,
 }: {
   from: string;
@@ -68,6 +71,7 @@ export function useLiveDetections({
   sensor: string;
   bbox: Bbox;
   country?: string;
+  continent?: string;
   enabled?: boolean;
 }) {
   const [attempt, setAttempt] = useState(0);
@@ -77,6 +81,7 @@ export function useLiveDetections({
     sensor,
     bbox: bbox.join(","),
     country: country || "",
+    continent: continent || "",
   }).toString();
   const requestKey = `${query}#${attempt}`;
   const [result, setResult] = useState<{
@@ -102,6 +107,7 @@ export function useLiveDetections({
         controller.signal,
         {
           country: params.get("country") || undefined,
+          continent: params.get("continent") || undefined,
           onProgress: (p) => {
             if (!controller.signal.aborted) setProgress(p);
           },

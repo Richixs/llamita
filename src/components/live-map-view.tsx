@@ -34,6 +34,15 @@ const GeographicMap = dynamic(() => import("./geographic-map"), {
     </div>
   ),
 });
+function continentBbox(continent: string): [number, number, number, number] {
+  const members = countries.filter((c) => c.continent === continent);
+  return [
+    Math.min(...members.map((c) => c.bbox[0])),
+    Math.min(...members.map((c) => c.bbox[1])),
+    Math.max(...members.map((c) => c.bbox[2])),
+    Math.max(...members.map((c) => c.bbox[3])),
+  ];
+}
 export function LiveMapView({ initialFocus = "" }: { initialFocus?: string }) {
   const {
     filters,
@@ -215,6 +224,45 @@ export function LiveMapView({ initialFocus = "" }: { initialFocus?: string }) {
         <section className="filter-group">
           <h2 className="overline">Área de consulta</h2>
           <label className="field">
+            Continente
+            <select
+              aria-label="Continente"
+              value={filters.continent || ""}
+              onChange={(e) => {
+                const continent = e.target.value;
+                const members = countries.filter(
+                  (c) => c.continent === continent,
+                );
+                updateFilters({
+                  continent,
+                  country: "",
+                  province: "",
+                  municipality: "",
+                });
+                setBbox(
+                  continent
+                    ? [
+                        Math.min(...members.map((c) => c.bbox[0])),
+                        Math.min(...members.map((c) => c.bbox[1])),
+                        Math.max(...members.map((c) => c.bbox[2])),
+                        Math.max(...members.map((c) => c.bbox[3])),
+                      ]
+                    : WORLD_BBOX,
+                );
+                setPoint(null);
+              }}
+            >
+              <option value="">Todo el mundo</option>
+              {[...new Set(countries.map((c) => c.continent))]
+                .sort()
+                .map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+            </select>
+          </label>
+          <label className="field">
             País o territorio
             <select
               aria-label="País o territorio"
@@ -225,29 +273,41 @@ export function LiveMapView({ initialFocus = "" }: { initialFocus?: string }) {
                 );
                 updateFilters({
                   country: e.target.value,
+                  continent: selected?.continent || filters.continent,
                   province: "",
                   municipality: "",
                 });
                 setBbox(
                   selected
                     ? (selected.bbox as [number, number, number, number])
-                    : WORLD_BBOX,
+                    : filters.continent
+                      ? continentBbox(filters.continent)
+                      : WORLD_BBOX,
                 );
                 setPoint(null);
               }}
             >
-              <option value="">Todo el mundo</option>
-              {countries.map((c) => (
-                <option key={c.code} value={c.code}>
-                  {c.name}
-                </option>
-              ))}
+              <option value="">
+                {filters.continent ? "Todo el continente" : "Todos los países"}
+              </option>
+              {countries
+                .filter(
+                  (c) =>
+                    !filters.continent || c.continent === filters.continent,
+                )
+                .map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.name}
+                  </option>
+                ))}
             </select>
           </label>
           <p className="text-caption muted">
             {filters.country
               ? "Consulta recortada al país seleccionado."
-              : "Cobertura mundial de VIIRS y MODIS."}
+              : filters.continent
+                ? `Cobertura de ${filters.continent}.`
+                : "Cobertura mundial de VIIRS y MODIS."}
           </p>
           <button
             className="btn"
@@ -270,6 +330,7 @@ export function LiveMapView({ initialFocus = "" }: { initialFocus?: string }) {
               onClick={() => {
                 updateFilters({
                   country: "BOL",
+                  continent: "América del Sur",
                   province: "",
                   municipality: "",
                 });
@@ -292,6 +353,7 @@ export function LiveMapView({ initialFocus = "" }: { initialFocus?: string }) {
                       : COCHABAMBA_MUNICIPALITIES;
                     updateFilters({
                       country: "BOL",
+                      continent: "América del Sur",
                       province,
                       municipality: allowed.includes(filters.municipality)
                         ? filters.municipality
@@ -315,6 +377,7 @@ export function LiveMapView({ initialFocus = "" }: { initialFocus?: string }) {
                   onChange={(e) =>
                     updateFilters({
                       country: "BOL",
+                      continent: "América del Sur",
                       municipality: e.target.value,
                     })
                   }

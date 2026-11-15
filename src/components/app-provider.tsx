@@ -36,6 +36,7 @@ export function AppProvider({
     sensor: filters.satellite,
     bbox,
     country: filters.country,
+    continent: filters.continent,
   });
   return (
     <AppContext.Provider

@@ -41,6 +41,7 @@ export function PdfView() {
     sensor: config.satellite,
     bbox: config.bbox || WORLD_BBOX,
     country: config.country,
+    continent: config.continent,
   });
   const data = live.data;
   return (

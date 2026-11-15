@@ -91,6 +91,13 @@ test("global results preserve overseas detections and country filtering uses act
     bbox: WORLD_BBOX,
   };
   assert.equal((await queryHotspots(base)).data.length, 2);
+  const southAmerica = await queryHotspots({
+    ...base,
+    continent: "América del Sur",
+  });
+  assert.equal(southAmerica.data.length, 2);
+  const africa = await queryHotspots({ ...base, continent: "África" });
+  assert.equal(africa.data.length, 0);
   const bolivia = await queryHotspots({ ...base, country: "BOL" });
   assert.equal(bolivia.data.length, 1);
   assert.equal(bolivia.data[0].countryCode, "BOL");

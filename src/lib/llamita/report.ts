@@ -18,6 +18,7 @@ export interface ReportConfig {
   origin: "live";
   bbox?: Bbox;
   country?: string;
+  continent?: string;
   warnings?: string[];
   areaType: AreaType;
   areas: string[];
@@ -58,6 +59,7 @@ export function reportData(
       ...initialFilters,
       ...config.sourceFilters,
       country: config.country,
+      continent: config.continent,
       mode: config.mode,
       from: config.from,
       to: config.to,
@@ -194,6 +196,7 @@ export function liveConfig(
     origin: "live",
     bbox,
     country: filters.country,
+    continent: filters.continent,
     sourceFilters: undefined,
     sections: ["summary", "map", "daily"],
   };

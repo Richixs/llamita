@@ -12,6 +12,7 @@ import {
   type Bbox,
 } from "@/lib/geo/catalog";
 import { findMunicipality, findProvince } from "@/lib/geo/boundaries";
+import countryCatalog from "@/lib/geo/country-catalog.json" with { type: "json" };
 import { countryFeature, inCountry, locateCountry } from "@/lib/geo/countries";
 import { harmonizeToGrid } from "./grid";
 const DAY = 86400000;
@@ -24,6 +25,7 @@ export interface HotspotQuery {
   to: string;
   bbox: Bbox;
   sensor: "all" | "VIIRS" | "MODIS";
+  continent?: string;
   country?: string;
 }
 export interface HotspotResult {
@@ -57,6 +59,9 @@ export function parseHotspotQuery(params: URLSearchParams): HotspotQuery {
       `Las consultas de cobertura amplia se procesan en bloques de hasta ${MAX_GLOBAL_QUERY_DAYS} días.`,
     );
   const country = params.get("country") || undefined;
+  const continent = params.get("continent") || undefined;
+  if (continent && !countryCatalog.some((c) => c.continent === continent))
+    throw new FirmsValidationError("Continente no reconocido.");
   if (country && !countryFeature(country))
     throw new FirmsValidationError(
       "El país no pertenece al catálogo geográfico.",
@@ -69,6 +74,7 @@ export function parseHotspotQuery(params: URLSearchParams): HotspotQuery {
     to,
     bbox: bounds,
     country,
+    continent,
     sensor: sensor as HotspotQuery["sensor"],
   };
 }
@@ -98,6 +104,9 @@ export function toDetection(row: FirmsHotspot, source: FirmsSource): Detection {
   const local = new Date(Date.parse(utc) - 4 * 3600000).toISOString();
   const country = locateCountry(row.latitude, row.longitude);
   return {
+    continent:
+      countryCatalog.find((c) => c.code === country?.code)?.continent ||
+      "Sin asignar",
     country: country?.name || "Sin asignar",
     countryCode: country?.code || "",
     id: `firms-${source}-${row.acq_date}-${time}-${row.latitude}-${row.longitude}-${row.satellite}`,
@@ -221,6 +230,7 @@ async function fetchHotspots(query: HotspotQuery): Promise<HotspotResult> {
         const converted = rows.map((row) => toDetection(row, task.source));
         for (const d of converted) {
           if (
+            (query.continent && d.continent !== query.continent) ||
             (query.country &&
               !inCountry(query.country, d.latitude, d.longitude)) ||
             d.date < query.from ||
