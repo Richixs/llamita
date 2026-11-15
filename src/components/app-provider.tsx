@@ -2,13 +2,14 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
 import { initialFilters, type Filters } from "@/lib/llamita/filters";
 import { filterDetections, type Detection } from "@/lib/llamita/data";
-import { GAMC_BBOX, type Bbox } from "@/lib/geo/catalog";
+import { WORLD_BBOX, type Bbox } from "@/lib/geo/catalog";
 import { useLiveDetections } from "./use-live-detections";
 interface AppState {
   filters: Filters;
   updateFilters: (patch: Partial<Filters>) => void;
   resetFilters: () => void;
   data: Detection[];
+  progress: { completed: number; total: number };
   loading: boolean;
   error: string;
   warnings: string[];
@@ -28,12 +29,13 @@ export function AppProvider({
 }) {
   const realFilters = { ...initialFilters, from: today, to: today };
   const [filters, setFilters] = useState<Filters>(realFilters);
-  const [bbox, setBbox] = useState<Bbox>(GAMC_BBOX);
+  const [bbox, setBbox] = useState<Bbox>(WORLD_BBOX);
   const live = useLiveDetections({
     from: filters.mode === "day" ? filters.to : filters.from,
     to: filters.to,
     sensor: filters.satellite,
     bbox,
+    country: filters.country,
   });
   return (
     <AppContext.Provider
@@ -43,6 +45,7 @@ export function AppProvider({
           setFilters((current) => ({ ...current, ...patch })),
         resetFilters: () => setFilters(realFilters),
         data: filterDetections(filters, live.data),
+        progress: live.progress,
         loading: live.loading,
         error: live.error,
         warnings: live.warnings,

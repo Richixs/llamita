@@ -54,16 +54,26 @@ export default function GeographicMap({
       zoomControl: false,
       preferCanvas: true,
       maxZoom: 19,
-      minZoom: 4,
-      center: [-17.39, -66.17],
-      zoom: 12,
+      minZoom: 1,
+      center: [15, 0],
+      zoom: 2,
+      maxBounds: [
+        [-90, -180],
+        [90, 180],
+      ],
+      maxBoundsViscosity: 1,
     });
     mapRef.current = map;
     L.control.scale({ imperial: false }).addTo(map);
     apiRef.current = {
       getBbox: () => {
         const b = map.getBounds();
-        return [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()];
+        return [
+          Math.max(-180, b.getWest()),
+          Math.max(-90, b.getSouth()),
+          Math.min(180, b.getEast()),
+          Math.min(90, b.getNorth()),
+        ];
       },
       fit: (b) =>
         map.fitBounds([
@@ -213,7 +223,7 @@ export default function GeographicMap({
     if (showHotspots)
       for (const d of data) {
         const marker = L.circleMarker([d.latitude, d.longitude], {
-          radius: d.id === focusId ? 8 : 5,
+          radius: d.id === focusId ? 8 : data.length > 10000 ? 2 : 5,
           fillColor: heatColor(d.frp),
           fillOpacity: 1,
           color: d.id === focusId ? "#241A16" : "white",
@@ -221,7 +231,7 @@ export default function GeographicMap({
           bubblingMouseEvents: false,
         });
         const label = document.createElement("span");
-        label.textContent = `${d.satellite} · ${d.frp} MW · ${d.date} ${d.time}`;
+        label.textContent = `${d.country || "Sin asignar"} · ${d.satellite} · ${d.frp} MW · ${d.date} ${d.time}`;
         marker.bindTooltip(label);
         marker.on("click", () => callbacks.current.onPoint(d));
         marker.addTo(group);

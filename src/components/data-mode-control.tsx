@@ -1,12 +1,14 @@
 "use client";
 import { useApp } from "./app-provider";
 export function DataNotice() {
-  const { loading, error, warnings, reload } = useApp();
+  const { loading, error, warnings, reload, progress } = useApp();
   return (
     <div className="data-notices">
       {loading && (
         <p className="notice" role="status">
-          Consultando detecciones de NASA FIRMS…
+          Consultando detecciones de NASA FIRMS…{" "}
+          {progress.total > 1 &&
+            `Bloque ${progress.completed} de ${progress.total}`}
         </p>
       )}
       {error && (
@@ -26,10 +28,10 @@ export function DataNotice() {
         </details>
       )}
       <p className="text-caption muted">
-        Consulta por rectángulo geográfico. Las detecciones aún no están
-        asignadas a municipios, provincias, TCO o áreas protegidas.
-        Observaciones de distintos satélites pueden coincidir en un mismo
-        incendio.
+        Cobertura mundial VIIRS y MODIS. Los países se asignan con límites de
+        Natural Earth; las costas e islas pequeñas pueden quedar sin asignar.
+        Las provincias y municipios están disponibles para el reto local de
+        Cochabamba. Fechas y horas en UTC−4.
       </p>
     </div>
   );

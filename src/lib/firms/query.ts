@@ -3,8 +3,16 @@ import { FirmsUpstreamError, FirmsValidationError } from "./errors";
 import { parseAreaCoordinates, parseDateParam } from "./validation";
 import type { FirmsAvailability, FirmsHotspot, FirmsSource } from "./types";
 import type { Detection } from "@/lib/llamita/data";
-import { MAX_QUERY_DAYS, type Bbox } from "@/lib/geo/catalog";
+import {
+  MAX_QUERY_DAYS,
+  MAX_GLOBAL_QUERY_DAYS,
+  MIN_HISTORY_DATE,
+  WORLD_BBOX,
+  isWideArea,
+  type Bbox,
+} from "@/lib/geo/catalog";
 import { findMunicipality, findProvince } from "@/lib/geo/boundaries";
+import { countryFeature, inCountry, locateCountry } from "@/lib/geo/countries";
 import { harmonizeToGrid } from "./grid";
 const DAY = 86400000;
 // Parallel FIRMS requests per hotspot query. Higher cuts wall-clock time for
@@ -16,6 +24,7 @@ export interface HotspotQuery {
   to: string;
   bbox: Bbox;
   sensor: "all" | "VIIRS" | "MODIS";
+  country?: string;
 }
 export interface HotspotResult {
   data: Detection[];
@@ -36,14 +45,21 @@ export function parseHotspotQuery(params: URLSearchParams): HotspotQuery {
       `Las consultas reales admiten entre 1 y ${MAX_QUERY_DAYS} días. Divide los periodos más largos.`,
     );
   const coordinates = parseAreaCoordinates(params.get("bbox"));
-  if (coordinates === "world")
+  const bounds = (
+    coordinates === "world"
+      ? [...WORLD_BBOX]
+      : coordinates.split(",").map(Number)
+  ) as Bbox;
+  if (from < MIN_HISTORY_DATE)
+    throw new FirmsValidationError("El histórico comienza en el año 2000.");
+  if (isWideArea(bounds) && days > MAX_GLOBAL_QUERY_DAYS)
     throw new FirmsValidationError(
-      "Selecciona un área rectangular para la consulta.",
+      `Las consultas de cobertura amplia se procesan en bloques de hasta ${MAX_GLOBAL_QUERY_DAYS} días.`,
     );
-  const bounds = coordinates.split(",").map(Number);
-  if (bounds[2] - bounds[0] > 10 || bounds[3] - bounds[1] > 10)
+  const country = params.get("country") || undefined;
+  if (country && !countryFeature(country))
     throw new FirmsValidationError(
-      "Selecciona un área de hasta 10 grados de ancho y alto.",
+      "El país no pertenece al catálogo geográfico.",
     );
   const sensor = params.get("sensor") || "all";
   if (!["all", "VIIRS", "MODIS"].includes(sensor))
@@ -51,7 +67,8 @@ export function parseHotspotQuery(params: URLSearchParams): HotspotQuery {
   return {
     from,
     to,
-    bbox: coordinates.split(",").map(Number) as Bbox,
+    bbox: bounds,
+    country,
     sensor: sensor as HotspotQuery["sensor"],
   };
 }
@@ -79,7 +96,10 @@ export function toDetection(row: FirmsHotspot, source: FirmsSource): Detection {
     );
   const utc = `${row.acq_date}T${time.slice(0, 2)}:${time.slice(2)}:00Z`;
   const local = new Date(Date.parse(utc) - 4 * 3600000).toISOString();
+  const country = locateCountry(row.latitude, row.longitude);
   return {
+    country: country?.name || "Sin asignar",
+    countryCode: country?.code || "",
     id: `firms-${source}-${row.acq_date}-${time}-${row.latitude}-${row.longitude}-${row.satellite}`,
     origin: "live",
     source,
@@ -144,6 +164,13 @@ function planFamily(
     }
   }
 
+  if (
+    legs.length &&
+    (legs.every((l) => l.from > from) || legs.every((l) => l.to < toExclusive))
+  )
+    warnings.push(
+      `${family.nrt}/${family.sp}: disponibilidad parcial; consulta la cobertura del producto antes de comparar años.`,
+    );
   if (!legs.length)
     warnings.push(
       `${family.nrt}/${family.sp} no disponen de datos en el periodo elegido.`,
@@ -187,11 +214,15 @@ async function fetchHotspots(query: HotspotQuery): Promise<HotspotResult> {
       try {
         const rows = await getAreaHotspots({
           ...task,
-          coordinates: query.bbox.join(","),
+          coordinates: query.bbox.every((v, i) => v === WORLD_BBOX[i])
+            ? "world"
+            : query.bbox.join(","),
         });
         const converted = rows.map((row) => toDetection(row, task.source));
         for (const d of converted) {
           if (
+            (query.country &&
+              !inCountry(query.country, d.latitude, d.longitude)) ||
             d.date < query.from ||
             d.date > query.to ||
             d.longitude < query.bbox[0] ||

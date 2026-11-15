@@ -2,6 +2,8 @@ import type { Filters } from "./filters";
 export interface Detection {
   origin?: "live";
   source?: string;
+  country?: string;
+  countryCode?: string;
   id: string;
   municipality: string;
   province: string;
@@ -31,6 +33,7 @@ export function filterDetections(filters: Filters, source: Detection[]) {
     (d) =>
       d.date >= from &&
       d.date <= filters.to &&
+      (!filters.country || d.countryCode === filters.country) &&
       (!filters.province || d.province === filters.province) &&
       (!filters.municipality || d.municipality === filters.municipality) &&
       (!filters.territory || d.territory === filters.territory) &&
@@ -40,11 +43,12 @@ export function filterDetections(filters: Filters, source: Detection[]) {
 }
 export function ranking(
   data: Detection[],
-  key: "municipality" | "province" | "protectedArea",
+  key: "country" | "satellite" | "municipality" | "province" | "protectedArea",
 ) {
   const counts = new Map<string, number>();
   for (const d of data) {
-    const name = d[key] || "Fuera de áreas";
+    const name =
+      d[key] || (key === "protectedArea" ? "Fuera de áreas" : "Sin asignar");
     counts.set(name, (counts.get(name) || 0) + 1);
   }
   return [...counts]
@@ -54,13 +58,15 @@ export function ranking(
 export function byDay(data: Detection[], from: string, to: string) {
   const result: { name: string; count: number }[] = [];
   if (!from || !to || from > to) return result;
+  const counts = new Map<string, number>();
+  for (const d of data) counts.set(d.date, (counts.get(d.date) || 0) + 1);
   for (
     let t = Date.parse(from);
-    t <= Date.parse(to) && result.length < 366;
+    t <= Date.parse(to) && result.length < 10000;
     t += 86400000
   ) {
     const name = new Date(t).toISOString().slice(0, 10);
-    result.push({ name, count: data.filter((d) => d.date === name).length });
+    result.push({ name, count: counts.get(name) || 0 });
   }
   return result;
 }

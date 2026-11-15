@@ -1,5 +1,5 @@
 import { filterDetections, type Detection } from "./data";
-import { GAMC_BBOX, type Bbox } from "@/lib/geo/catalog";
+import { WORLD_BBOX, type Bbox } from "@/lib/geo/catalog";
 import { initialFilters, periodError, type Filters } from "./filters";
 export type ReportFormat = "PDF" | "Excel" | "CSV" | "Shapefile" | "GeoJSON";
 export type ReportSection =
@@ -8,7 +8,7 @@ export const sectionLabels: Record<ReportSection, string> = {
   summary: "Resumen con cifras clave",
   map: "Mapa de focos",
   daily: "Gráfico de focos por día",
-  ranking: "Ranking de municipios",
+  ranking: "Rankings por país y sensor",
   protected: "Focos en áreas protegidas",
   table: "Tabla con todas las detecciones",
 };
@@ -17,6 +17,7 @@ export type AreaType =
 export interface ReportConfig {
   origin: "live";
   bbox?: Bbox;
+  country?: string;
   warnings?: string[];
   areaType: AreaType;
   areas: string[];
@@ -56,6 +57,7 @@ export function reportData(
     {
       ...initialFilters,
       ...config.sourceFilters,
+      country: config.country,
       mode: config.mode,
       from: config.from,
       to: config.to,
@@ -110,6 +112,8 @@ export function isReportConfig(value: unknown): value is ReportConfig {
   const c = value as ReportConfig;
   return (
     c.origin === "live" &&
+    (!c.country ||
+      (typeof c.country === "string" && /^[A-Z]{3}$/.test(c.country))) &&
     (!c.bbox ||
       (Array.isArray(c.bbox) &&
         c.bbox.length === 4 &&
@@ -183,14 +187,13 @@ export function reportPages(config: ReportConfig, data: Detection[]) {
 
 export function liveConfig(
   filters: Filters,
-  bbox: Bbox = GAMC_BBOX,
+  bbox: Bbox = WORLD_BBOX,
 ): ReportConfig {
   return {
     ...configFromFilters(filters),
     origin: "live",
     bbox,
-    areaType: "all",
-    areas: [],
+    country: filters.country,
     sourceFilters: undefined,
     sections: ["summary", "map", "daily"],
   };

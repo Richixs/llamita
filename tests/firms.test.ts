@@ -75,15 +75,17 @@ test("UTC observations cross Bolivia midnight correctly", () => {
   assert.equal(d.origin, "live");
   assert.equal(d.municipality, "Villa Tunari");
 });
-test("country endpoints fail clearly without calling unavailable NASA services", async () => {
-  await assert.rejects(getCountries(), /deshabilitado/);
+test("country catalog is available locally and rejects unknown countries", async () => {
+  const countries = await getCountries();
+  assert.ok(countries.length > 200);
+  assert.ok(countries.some((c) => c.id === "BOL"));
   await assert.rejects(
     getCountryHotspots({
       source: "MODIS_NRT",
-      countryCode: "PER",
-      dayRange: 4,
+      countryCode: "XXX",
+      dayRange: 1,
     }),
-    /deshabilitado/,
+    /no reconocido/,
   );
 });
 test("FIRMS errors never reveal upstream credentials and malformed CSV is rejected", async (t) => {

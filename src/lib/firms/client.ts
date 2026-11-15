@@ -1,10 +1,9 @@
+import countryCatalog from "@/lib/geo/country-catalog.json" with { type: "json" };
+import { inCountry } from "@/lib/geo/countries";
+import { FirmsValidationError } from "./errors";
 import { FIRMS_BASE_URL } from "./constants";
 import { parseCsv } from "./csv";
-import {
-  FirmsConfigError,
-  FirmsUnavailableError,
-  FirmsUpstreamError,
-} from "./errors";
+import { FirmsConfigError, FirmsUpstreamError } from "./errors";
 import {
   parseAreaCoordinates,
   parseDateParam,
@@ -151,18 +150,27 @@ export async function getAreaHotspots(params: {
   });
 }
 export async function getCountries(): Promise<FirmsCountry[]> {
-  throw new FirmsUnavailableError(
-    "NASA tiene deshabilitado el catálogo countries. Consulta detecciones por coordenadas en /api/firms/area o /api/firms/hotspots.",
-  );
+  return countryCatalog.map((c) => ({
+    id: c.code,
+    name: c.name,
+    extent: c.bbox as [number, number, number, number],
+  }));
 }
-export async function getCountryHotspots(_params: {
+export async function getCountryHotspots(params: {
   source: FirmsSource;
   countryCode: string;
   dayRange: number;
   date?: string;
 }): Promise<FirmsHotspot[]> {
-  void _params;
-  throw new FirmsUnavailableError(
-    "NASA tiene deshabilitado el servicio country. Utiliza /api/firms/area o /api/firms/hotspots con un BBOX; un rectángulo no sustituye los límites oficiales del país.",
+  const country = countryCatalog.find((c) => c.code === params.countryCode);
+  if (!country) throw new FirmsValidationError("País no reconocido.");
+  const rows = await getAreaHotspots({
+    source: params.source,
+    coordinates: country.bbox.join(","),
+    dayRange: params.dayRange,
+    date: params.date,
+  });
+  return rows.filter((row) =>
+    inCountry(country.code, row.latitude, row.longitude),
   );
 }

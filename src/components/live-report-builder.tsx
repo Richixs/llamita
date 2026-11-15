@@ -6,7 +6,7 @@ import { useLiveDetections, fetchLiveDetections } from "./use-live-detections";
 import { ReportDocument } from "./report-document";
 import { Icon, type IconName } from "./icon";
 import { dateLabel, number } from "@/lib/llamita/filters";
-import { GAMC_BBOX } from "@/lib/geo/catalog";
+import { WORLD_BBOX } from "@/lib/geo/catalog";
 import {
   DRAFT_STORAGE_KEY,
   REPORT_STORAGE_KEY,
@@ -39,7 +39,8 @@ export function LiveReportBuilder() {
     from: config.mode === "day" ? config.to : config.from,
     to: config.to,
     sensor: config.satellite,
-    bbox: config.bbox || GAMC_BBOX,
+    bbox: config.bbox || WORLD_BBOX,
+    country: config.country,
   });
   useEffect(() => {
     function load() {
@@ -88,7 +89,9 @@ export function LiveReportBuilder() {
         c.mode === "day" ? c.to : c.from,
         c.to,
         c.satellite,
-        c.bbox || GAMC_BBOX,
+        c.bbox || WORLD_BBOX,
+        undefined,
+        { country: c.country },
       );
       const validation = validateReport(c, result.data);
       if (validation) throw new Error(validation);
@@ -169,7 +172,7 @@ export function LiveReportBuilder() {
               <div className="step-content">
                 <p>Rectángulo seleccionado en el mapa:</p>
                 <p className="mono text-caption">
-                  {(config.bbox || GAMC_BBOX).join(", ")}
+                  {(config.bbox || WORLD_BBOX).join(", ")}
                 </p>
                 <Link href="/" className="text-link">
                   Cambiar el área en el mapa

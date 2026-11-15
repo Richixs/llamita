@@ -7,6 +7,7 @@ import { useApp } from "./app-provider";
 import { DataNotice } from "./data-mode-control";
 import { Icon } from "./icon";
 import {
+  WORLD_BBOX,
   GAMC_BBOX,
   GAMC_LAYERS,
   MAX_QUERY_DAYS,
@@ -14,6 +15,7 @@ import {
   type GamcLayerId,
 } from "@/lib/geo/catalog";
 import { dateOffset, number, periodLabel } from "@/lib/llamita/filters";
+import countries from "@/lib/geo/country-catalog.json";
 import { boundaryBbox } from "@/lib/geo/geojson-bbox";
 import {
   COCHABAMBA_MUNICIPALITIES,
@@ -133,7 +135,7 @@ export function LiveMapView({ initialFocus = "" }: { initialFocus?: string }) {
             onClick={() => {
               resetFilters();
               setPoint(null);
-              setBbox(GAMC_BBOX);
+              setBbox(WORLD_BBOX);
             }}
           >
             Limpiar todo
@@ -213,31 +215,40 @@ export function LiveMapView({ initialFocus = "" }: { initialFocus?: string }) {
         <section className="filter-group">
           <h2 className="overline">Área de consulta</h2>
           <label className="field">
-            Cobertura
+            País o territorio
             <select
-              aria-label="Cobertura de consulta"
-              value={
-                bbox.join(",") === GAMC_BBOX.join(",")
-                  ? "gamc"
-                  : bbox.join(",") === REGIONAL_BBOX.join(",")
-                    ? "regional"
-                    : "custom"
-              }
-              onChange={(e) =>
+              aria-label="País o territorio"
+              value={filters.country || ""}
+              onChange={(e) => {
+                const selected = countries.find(
+                  (c) => c.code === e.target.value,
+                );
+                updateFilters({
+                  country: e.target.value,
+                  province: "",
+                  municipality: "",
+                });
                 setBbox(
-                  e.target.value === "regional" ? REGIONAL_BBOX : GAMC_BBOX,
-                )
-              }
+                  selected
+                    ? (selected.bbox as [number, number, number, number])
+                    : WORLD_BBOX,
+                );
+                setPoint(null);
+              }}
             >
-              <option value="gamc">Cobertura municipal GAMC</option>
-              <option value="regional">
-                Rectángulo regional de Cochabamba
-              </option>
-              <option value="custom" disabled>
-                Vista personalizada
-              </option>
+              <option value="">Todo el mundo</option>
+              {countries.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.name}
+                </option>
+              ))}
             </select>
           </label>
+          <p className="text-caption muted">
+            {filters.country
+              ? "Consulta recortada al país seleccionado."
+              : "Cobertura mundial de VIIRS y MODIS."}
+          </p>
           <button
             className="btn"
             onClick={() => {
@@ -249,62 +260,82 @@ export function LiveMapView({ initialFocus = "" }: { initialFocus?: string }) {
             Consultar esta vista
           </button>
           <p className="text-caption muted">
-            Se incluyen todos los puntos dentro del rectángulo, sin recorte por
-            límites administrativos.
+            Mueve el mapa y consulta la vista para explorar cualquier región del
+            mundo.
           </p>
-          <fieldset className="unavailable-filters">
-            <legend className="overline">Filtros territoriales</legend>
-            <label className="field">
-              Provincia
-              <select
-                aria-label="Filtrar por provincia"
-                value={filters.province}
-                onChange={(e) => {
-                  const province = e.target.value;
-                  const allowed = province
-                    ? (MUNICIPALITIES_BY_PROVINCE[province] ?? [])
-                    : COCHABAMBA_MUNICIPALITIES;
-                  updateFilters({
-                    province,
-                    municipality: allowed.includes(filters.municipality)
-                      ? filters.municipality
-                      : "",
-                  });
-                }}
-              >
-                <option value="">Todas</option>
-                {COCHABAMBA_PROVINCES.map((name) => (
-                  <option key={name} value={name}>
-                    {name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="field">
-              Municipio
-              <select
-                aria-label="Filtrar por municipio"
-                value={filters.municipality}
-                onChange={(e) =>
-                  updateFilters({ municipality: e.target.value })
-                }
-              >
-                <option value="">Todos</option>
-                {(filters.province
-                  ? (MUNICIPALITIES_BY_PROVINCE[filters.province] ?? [])
-                  : COCHABAMBA_MUNICIPALITIES
-                ).map((name) => (
-                  <option key={name} value={name}>
-                    {name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="field">
-              TCO / áreas protegidas
-              <input placeholder="Fuente pendiente" disabled />
-            </label>
-          </fieldset>
+          <details>
+            <summary>Reto local · Cochabamba</summary>
+            <button
+              className="btn"
+              onClick={() => {
+                updateFilters({
+                  country: "BOL",
+                  province: "",
+                  municipality: "",
+                });
+                setBbox(REGIONAL_BBOX);
+              }}
+            >
+              Consultar Cochabamba
+            </button>
+            <fieldset className="unavailable-filters">
+              <legend className="overline">Cochabamba · reto local</legend>
+              <label className="field">
+                Provincia
+                <select
+                  aria-label="Filtrar por provincia"
+                  value={filters.province}
+                  onChange={(e) => {
+                    const province = e.target.value;
+                    const allowed = province
+                      ? (MUNICIPALITIES_BY_PROVINCE[province] ?? [])
+                      : COCHABAMBA_MUNICIPALITIES;
+                    updateFilters({
+                      country: "BOL",
+                      province,
+                      municipality: allowed.includes(filters.municipality)
+                        ? filters.municipality
+                        : "",
+                    });
+                  }}
+                >
+                  <option value="">Todas</option>
+                  {COCHABAMBA_PROVINCES.map((name) => (
+                    <option key={name} value={name}>
+                      {name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="field">
+                Municipio
+                <select
+                  aria-label="Filtrar por municipio"
+                  value={filters.municipality}
+                  onChange={(e) =>
+                    updateFilters({
+                      country: "BOL",
+                      municipality: e.target.value,
+                    })
+                  }
+                >
+                  <option value="">Todos</option>
+                  {(filters.province
+                    ? (MUNICIPALITIES_BY_PROVINCE[filters.province] ?? [])
+                    : COCHABAMBA_MUNICIPALITIES
+                  ).map((name) => (
+                    <option key={name} value={name}>
+                      {name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="field">
+                TCO / áreas protegidas
+                <input placeholder="Fuente pendiente" disabled />
+              </label>
+            </fieldset>{" "}
+          </details>
         </section>
         <section className="filter-group">
           <h2 className="overline">Satélite</h2>
@@ -447,7 +478,9 @@ export function LiveMapView({ initialFocus = "" }: { initialFocus?: string }) {
               />
               <span className="switch" aria-hidden />
             </label>
-            <h3 className="overline">Servicios municipales</h3>
+            <h3 className="overline">
+              Reto local · servicios municipales GAMC
+            </h3>
             {GAMC_LAYERS.map((layer) => (
               <div className="municipal-layer" key={layer.id}>
                 <label className="layer-toggle">

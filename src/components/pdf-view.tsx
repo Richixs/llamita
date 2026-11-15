@@ -11,7 +11,7 @@ import {
   liveConfig,
   type ReportConfig,
 } from "@/lib/llamita/report";
-import { GAMC_BBOX } from "@/lib/geo/catalog";
+import { WORLD_BBOX } from "@/lib/geo/catalog";
 import { dateLabel } from "@/lib/llamita/filters";
 import "./statistics.css";
 import "./map.css";
@@ -39,7 +39,8 @@ export function PdfView() {
     from: config.mode === "day" ? config.to : config.from,
     to: config.to,
     sensor: config.satellite,
-    bbox: config.bbox || GAMC_BBOX,
+    bbox: config.bbox || WORLD_BBOX,
+    country: config.country,
   });
   const data = live.data;
   return (
