@@ -1,4 +1,5 @@
 "use client";
+import { LiveReportDocument } from "./live-report-document";
 import Image from "next/image";
 import { byDay, ranking, type Detection } from "@/lib/llamita/data";
 import { dateLabel, number, periodLabel } from "@/lib/llamita/filters";
@@ -17,6 +18,15 @@ export function ReportDocument({
   generatedAt?: string;
   preview?: boolean;
 }) {
+  if (config.origin === "live")
+    return (
+      <LiveReportDocument
+        config={config}
+        data={data}
+        generatedAt={generatedAt}
+        preview={preview}
+      />
+    );
   const municipal = ranking(data, "municipality");
   const days = byDay(
     data,

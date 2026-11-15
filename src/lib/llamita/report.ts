@@ -1,4 +1,5 @@
 import { detections, filterDetections, type Detection } from "./data";
+import { GAMC_BBOX, type Bbox } from "@/lib/geo/catalog";
 import { initialFilters, periodError, type Filters } from "./filters";
 export type ReportFormat = "PDF" | "Excel" | "CSV" | "Shapefile" | "GeoJSON";
 export type ReportSection =
@@ -14,6 +15,9 @@ export const sectionLabels: Record<ReportSection, string> = {
 export type AreaType =
   "all" | "province" | "municipality" | "territory" | "protectedArea";
 export interface ReportConfig {
+  origin?: "live" | "demo";
+  bbox?: Bbox;
+  warnings?: string[];
   areaType: AreaType;
   areas: string[];
   mode: "day" | "range";
@@ -34,6 +38,7 @@ export interface SavedReport {
   size?: number;
 }
 export const defaultReport: ReportConfig = {
+  origin: "demo",
   areaType: "municipality",
   areas: ["Villa Tunari", "Chimoré", "Puerto Villarroel", "Shinahota"],
   mode: "range",
@@ -43,20 +48,29 @@ export const defaultReport: ReportConfig = {
   format: "PDF",
   satellite: "all",
 };
-export function reportData(config: ReportConfig): Detection[] {
-  const data = filterDetections({
-    ...initialFilters,
-    ...config.sourceFilters,
-    mode: config.mode,
-    from: config.from,
-    to: config.to,
-    satellite: config.satellite,
-  });
+export function reportData(
+  config: ReportConfig,
+  source: Detection[] = detections,
+): Detection[] {
+  const data = filterDetections(
+    {
+      ...initialFilters,
+      ...config.sourceFilters,
+      mode: config.mode,
+      from: config.from,
+      to: config.to,
+      satellite: config.satellite,
+    },
+    source,
+  );
   if (config.areaType === "all") return data;
   const key = config.areaType;
   return data.filter((d) => config.areas.includes(d[key]));
 }
-export function validateReport(config: ReportConfig) {
+export function validateReport(
+  config: ReportConfig,
+  source: Detection[] = detections,
+) {
   const error = periodError(
     config.mode === "day" ? config.to : config.from,
     config.to,
@@ -66,8 +80,10 @@ export function validateReport(config: ReportConfig) {
     return "Selecciona al menos un lugar para el reporte.";
   if (config.format === "PDF" && !config.sections.length)
     return "Selecciona al menos una sección para el PDF.";
-  if (!reportData(config).length)
-    return "No hay focos con esta selección. Los datos de ejemplo abarcan del 1 al 14 de noviembre de 2026.";
+  if (!reportData(config, source).length)
+    return config.origin === "live"
+      ? "No hay detecciones para el área y periodo elegidos."
+      : "No hay focos con esta selección. Los datos de ejemplo abarcan del 1 al 14 de noviembre de 2026.";
   return "";
 }
 export function configFromFilters(filters: Filters): ReportConfig {
@@ -98,6 +114,17 @@ export function isReportConfig(value: unknown): value is ReportConfig {
   if (!value || typeof value !== "object") return false;
   const c = value as ReportConfig;
   return (
+    (c.origin === undefined || ["live", "demo"].includes(c.origin)) &&
+    (!c.bbox ||
+      (Array.isArray(c.bbox) &&
+        c.bbox.length === 4 &&
+        c.bbox.every(Number.isFinite) &&
+        c.bbox[0] < c.bbox[2] &&
+        c.bbox[1] < c.bbox[3] &&
+        c.bbox.every((n) => Math.abs(n) <= 180))) &&
+    (!c.warnings ||
+      (Array.isArray(c.warnings) &&
+        c.warnings.every((w) => typeof w === "string"))) &&
     ["all", "province", "municipality", "territory", "protectedArea"].includes(
       c.areaType,
     ) &&
@@ -172,7 +199,38 @@ export function reportPages(
 ) {
   return (
     1 +
+    (config.origin === "live"
+      ? Math.ceil((config.warnings?.length || 0) / 8)
+      : 0) +
     (config.sections.includes("protected") ? 1 : 0) +
     (config.sections.includes("table") ? Math.ceil(data.length / 28) : 0)
+  );
+}
+
+export function liveConfig(
+  filters: Filters,
+  bbox: Bbox = GAMC_BBOX,
+): ReportConfig {
+  return {
+    ...configFromFilters(filters),
+    origin: "live",
+    bbox,
+    areaType: "all",
+    areas: [],
+    sourceFilters: undefined,
+    sections: ["summary", "map", "daily"],
+  };
+}
+export function storeReports(reports: SavedReport[], origin: "live" | "demo") {
+  const others = readSavedReports(
+    localStorage.getItem(REPORT_STORAGE_KEY),
+  ).filter((r) => (r.config.origin || "demo") !== origin);
+  localStorage.setItem(
+    REPORT_STORAGE_KEY,
+    JSON.stringify(
+      [...reports, ...others]
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+        .slice(0, 20),
+    ),
   );
 }

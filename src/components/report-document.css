@@ -214,3 +214,31 @@
 .pdf-heat-legend .heat-5 {
   background: var(--color-calor-5);
 }
+.real-report-map {
+  width: 100%;
+  height: auto;
+  margin: 8px 0;
+  border: 1px solid var(--color-borde);
+}
+.pdf-live-daily {
+  margin-top: 20px;
+}
+.pdf-live-disclosure {
+  margin-top: 20px;
+  font-size: 12px;
+  color: var(--color-tinta-suave);
+}
+.pdf-live-daily .daily-chart {
+  margin: 8px 0;
+}
+.pdf-live-daily .daily-chart svg {
+  height: 140px;
+  min-height: 0;
+}
+.pdf-warning-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-left: 20px;
+  margin-top: 24px;
+}

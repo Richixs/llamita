@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { DataModeControl } from "./data-mode-control";
+import { LiveReportBuilder } from "./live-report-builder";
 import { useApp } from "./app-provider";
 import { Icon, type IconName } from "./icon";
 import { ReportDocument } from "./report-document";
@@ -13,6 +15,7 @@ import {
 import { dateOffset, number, periodError } from "@/lib/llamita/filters";
 import {
   configFromFilters,
+  storeReports,
   DRAFT_STORAGE_KEY,
   exampleReports,
   readSavedReports,
@@ -37,6 +40,10 @@ const formats: { name: ReportFormat; icon: IconName; description: string }[] = [
   { name: "GeoJSON", icon: "map", description: "Para la web" },
 ];
 export function ReportBuilder() {
+  const { mode } = useApp();
+  return mode === "live" ? <LiveReportBuilder /> : <DemoReportBuilder />;
+}
+function DemoReportBuilder() {
   const { filters } = useApp();
   const [config, setConfig] = useState<ReportConfig>(() =>
     configFromFilters(filters),
@@ -52,7 +59,11 @@ export function ReportBuilder() {
     const load = () => {
       try {
         const raw = localStorage.getItem(REPORT_STORAGE_KEY);
-        setReports(raw ? readSavedReports(raw) : exampleReports());
+        setReports(
+          raw
+            ? readSavedReports(raw).filter((r) => r.config.origin !== "live")
+            : exampleReports(),
+        );
       } catch {
         setReports(exampleReports());
         setStorageNote(
@@ -79,7 +90,7 @@ export function ReportBuilder() {
   function persist(next: SavedReport[]) {
     setReports(next);
     try {
-      localStorage.setItem(REPORT_STORAGE_KEY, JSON.stringify(next));
+      storeReports(next, "demo");
     } catch {
       setStorageNote(
         "No hay espacio para guardar el historial. Puedes descargar el archivo igualmente.",
@@ -163,6 +174,7 @@ export function ReportBuilder() {
   ];
   return (
     <main id="contenido" className="page reports-page">
+      <DataModeControl />
       <div className="page-heading">
         <div>
           <h1>Generar reporte</h1>

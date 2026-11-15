@@ -26,7 +26,7 @@ export async function exportReport(
       Latitud: d.latitude,
       Longitud: d.longitude,
       Sensor: d.satellite,
-      Origen: "Datos de ejemplo",
+      Origen: d.origin === "live" ? "NASA FIRMS" : "Datos de ejemplo",
     }));
     const sheet = XLSX.utils.json_to_sheet(rows);
     sheet["!cols"] = [
@@ -63,9 +63,13 @@ export async function exportReport(
     return await shp.zip<"blob">(geojson(data), {
       outputType: "blob",
       compression: "STORE",
-      folder: "llamita-ejemplo",
+      folder: config.origin === "live" ? "llamita-firms" : "llamita-ejemplo",
       types: { point: "focos" },
     });
+  }
+  if (config.origin === "live") {
+    const { exportLivePdf } = await import("./export-live-pdf");
+    return exportLivePdf(config, data);
   }
   return pdf(config, data);
 }
