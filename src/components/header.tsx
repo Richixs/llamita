@@ -1,21 +1,15 @@
 "use client";
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Icon } from "./icon";
+import { Logo } from "./ui/logo";
 export function Header() {
   const pathname = usePathname();
   if (pathname === "/reportes/pdf") return null;
   return (
     <header className="site-header">
       <Link href="/" className="brand" aria-label="Llamita, ir al mapa">
-        <Image
-          src="/brand/llamita-logo-para-fondo-oscuro.svg"
-          alt="llamita"
-          width={90}
-          height={36}
-          priority
-        />
+        <Logo theme="dark" />
       </Link>
       <nav className="site-nav" aria-label="Navegación principal">
         {[

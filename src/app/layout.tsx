@@ -9,7 +9,7 @@ const display = localFont({
     { path: "../../public/fonts/space-grotesk-500.ttf", weight: "500" },
     { path: "../../public/fonts/space-grotesk-700.ttf", weight: "700" },
   ],
-  variable: "--font-display",
+  variable: "--font-heading",
   display: "swap",
 });
 const text = localFont({
