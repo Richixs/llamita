@@ -9,3 +9,5 @@ Natural Earth es de dominio público: https://www.naturalearthdata.com/about/ter
 Son límites cartográficos generalizados, no una declaración legal de fronteras. Los puntos fuera de los polígonos (p. ej. mar, costas e islas pequeñas) se conservan en la consulta mundial como «Sin asignar». La selección de país aplica recorte por polígono, no solo por rectángulo.
 
 Los archivos de provincias y municipios corresponden únicamente a Cochabamba y se mantienen para el reto local.
+
+`map-context.json` contiene anillos de Natural Earth 1:50m simplificados con una tolerancia de 0,05 grados para mostrar fronteras cuando el mapa base no está disponible. No se usa esta simplificación para asignar ni filtrar países. Las previsualizaciones y los PDF incorporan teselas de OpenStreetMap cuando hay conexión.
